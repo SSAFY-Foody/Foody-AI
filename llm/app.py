@@ -14,11 +14,7 @@ from pydantic import BaseModel
 load_dotenv()  # .env 파일 내용 읽어오기
 
 GMS_KEY = os.getenv("GMS_KEY")
-GEMINI_URL = (
-    "https://gms.ssafy.io/gmsapi/"
-    "generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.5-pro:generateContent"
-)
+GEMINI_URL = os.getenv("AI_URL")
 
 
 # DB 설정 
