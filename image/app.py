@@ -203,7 +203,7 @@ qwen = QwenClient()
 app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
 
 
-@app.post("/predict", response_model=FoodResponse)
+@app.post("/food", response_model=FoodResponse)
 async def predict_food(
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -225,29 +225,29 @@ async def predict_food(
 
 
 
-    # 4) DB 조회 - 부분 일치 기반
-    # 공백 제거 후에 like 구문 통해서 일부 일치하는 값 찾기
-    food = (
-        db.query(Foods)
-        .filter(func.replace(Foods.name, " ", "").like(f"%{normalized_name}%"))
-        .order_by(func.length(Foods.name))
-        .first()
-    )
+    # # 4) DB 조회 - 부분 일치 기반
+    # # 공백 제거 후에 like 구문 통해서 일부 일치하는 값 찾기
+    # food = (
+    #     db.query(Foods)
+    #     .filter(func.replace(Foods.name, " ", "").like(f"%{normalized_name}%"))
+    #     .order_by(func.length(Foods.name))
+    #     .first()
+    # )
 
-    # 5) DB에 있으면 → DB 값 그대로 응답
-    if food:
-        print("[INFO] Food found in DB:", food.name)
-        return FoodResponse(
-            name=food.name,
-            category=food.category,
-            standard=food.standard,
-            kcal=food.kcal,
-            carb_g=food.carb_g,
-            protein_g=food.protein_g,
-            fat_g=food.fat_g,
-            sugar_g=food.sugar_g,
-            natrium_g=food.natrium_g,
-        )
+    # # 5) DB에 있으면 → DB 값 그대로 응답
+    # if food:
+    #     print("[INFO] Food found in DB:", food.name)
+    #     return FoodResponse(
+    #         name=food.name,
+    #         category=food.category,
+    #         standard=food.standard,
+    #         kcal=food.kcal,
+    #         carb_g=food.carb_g,
+    #         protein_g=food.protein_g,
+    #         fat_g=food.fat_g,
+    #         sugar_g=food.sugar_g,
+    #         natrium_g=food.natrium_g,
+    #     )
 
     # 6) DB에 없으면  Qwen으로 영양소 추론 (DB INSERT 없음)
     est = qwen.estimate_nutrition(food_name)
