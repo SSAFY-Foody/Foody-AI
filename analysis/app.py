@@ -289,7 +289,7 @@ app = FastAPI(title="Foody Character Recommender API")
 
 CHARACTERS_CACHE: List[Dict[str, Any]] = []
 
-
+# fody 캐릭터 가져오는 초기화 로직
 @app.on_event("startup")
 def on_startup():
     global CHARACTERS_CACHE
@@ -303,8 +303,8 @@ def on_startup():
         print(f"[ERROR] characters 로딩 실패: {e}")
         CHARACTERS_CACHE = []
 
-
-@app.post("/report")
+#fastapi 엔드포인트
+@app.post("/api/analysis/report")
 def recommend_character(report: Report):
     
     if not CHARACTERS_CACHE:
