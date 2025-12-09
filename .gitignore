@@ -11,3 +11,6 @@ __pycache__/
 # Conda / venv
 venv/
 .env/
+
+# Chroma_Db 
+/vlm/chroma_foods/

@@ -1,26 +1,32 @@
-
 import io
+import os
+import json
+import re
+from typing import Optional, List, Dict
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
 from pydantic import BaseModel
-from typing import Optional
 from PIL import Image
+
 import torch
 from transformers import AutoProcessor, AutoModelForVision2Seq
 
 from sqlalchemy import create_engine, Column, String, Float, func
 from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
-import os
 from dotenv import load_dotenv
 
-load_dotenv()  # .env 파일 내용 읽어오기
+# =========================
+# .env 로드
+# =========================
+load_dotenv()
 
+# =========================
 # SQL 설정
+# =========================
 DATABASE_URL = os.getenv("FOODY_DATABASE_URL")
-
 if not DATABASE_URL:
     raise RuntimeError("FOODY_DATABASE_URL 환경변수가 설정되어 있지 않습니다.")
-
 
 engine = create_engine(DATABASE_URL, echo=False, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
@@ -35,24 +41,29 @@ def get_db():
         db.close()
 
 
-#기존 FOOD 테이블 매핑
-
+# =========================
+# 기존 FOOD 테이블 매핑
+# =========================
 class Foods(Base):
-    __tablename__ = "foods" 
+    __tablename__ = "foods"
 
-    code      = Column(String(45), primary_key=True)   # PK
-    name      = Column(String(30), nullable=False)     # 음식 이름
-    standard  = Column(String(10), nullable=False)     # 기준량
-    kcal      = Column(Float, nullable=False, default=0)
-    carb    = Column(Float, nullable=False, default=0)
-    protein = Column(Float, nullable=False, default=0)
-    fat     = Column(Float, nullable=False, default=0)
-    sugar   = Column(Float, nullable=False, default=0)
-    natrium = Column(Float, nullable=False, default=0)
+    code     = Column(String(45), primary_key=True)
+    name     = Column(String(30), nullable=False)
+    standard = Column(String(10), nullable=False)
+    kcal     = Column(Float, nullable=False, default=0)
+
+    # 첫 번째 인자에 "실제 DB 컬럼 이름"을 넣어주면 됨
+    carb     = Column("carb_g", Float, nullable=False, default=0)
+    protein  = Column("protein_g", Float, nullable=False, default=0)
+    fat      = Column("fat_g", Float, nullable=False, default=0)
+    sugar    = Column("sugar_g", Float, nullable=False, default=0)
+    natrium  = Column("natrium_g", Float, nullable=False, default=0)
 
 
-#응답 모델(JSON) 생성
 
+# =========================
+# 응답 모델(JSON)
+# =========================
 class FoodResponse(BaseModel):
     name: str
     standard: str
@@ -64,10 +75,10 @@ class FoodResponse(BaseModel):
     natrium: float
 
 
-# ai 모델 로드
-
+# =========================
+# Qwen VLM 클라이언트
+# =========================
 class QwenClient:
-
     def __init__(self):
         print("[INFO] Loading Qwen2.5-VL-3B-Instruct...")
         self.processor = AutoProcessor.from_pretrained(
@@ -76,12 +87,11 @@ class QwenClient:
         self.model = AutoModelForVision2Seq.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct",
             torch_dtype=torch.float16,
-            device_map="auto"  # GPU 안 되면 여기 cpu로 바꿔줘야 함
+            device_map="auto",  # 필요시 "cpu" 로 변경
         )
 
-    # 음식 이미지를 보고 음식 명 추론
+    # 1) 음식 이미지를 보고 음식 명 추론
     def predict_food_name(self, pil_image: Image.Image) -> str:
-
         messages = [
             {
                 "role": "user",
@@ -100,8 +110,8 @@ class QwenClient:
                             "오믈렛\n"
                             "샐러드\n\n"
                             "정확히 한 단어만 출력하세요."
-                        )
-                    }
+                        ),
+                    },
                 ],
             }
         ]
@@ -117,20 +127,19 @@ class QwenClient:
         output = self.model.generate(
             **inputs,
             max_new_tokens=20,
-            do_sample=False
+            do_sample=False,
         )
 
         text = self.processor.decode(
             output[0][inputs["input_ids"].shape[-1]:],
-            skip_special_tokens=True
+            skip_special_tokens=True,
         ).strip()
 
         # "김밥입니다." 같은 경우 대비 → 첫 단어만 사용
         return text.split()[0]
 
-   # DB 에 없는 경우 추론
-    def estimate_nutrition(self, food_name: str) -> dict:
-
+    # 2) (Fallback) 순수 LLM 기반 영양 추론 (RAG 실패 시 마지막 보루)
+    def estimate_nutrition_llm(self, food_name: str) -> dict:
         prompt = f"""
 당신은 전문 영양학자입니다.
 "{food_name}" 음식의 100g 기준 영양성분을 추정하세요.
@@ -164,20 +173,18 @@ class QwenClient:
 
         output = self.model.generate(
             **inputs,
-            max_new_tokens=200
+            max_new_tokens=200,
         )
 
         text = self.processor.decode(
             output[0][inputs["input_ids"].shape[-1]:],
-            skip_special_tokens=True
+            skip_special_tokens=True,
         ).strip()
 
-        import json, re
         try:
-            # 혹시 모델이 앞뒤에 # & * 같은 이상한 문자 붙이는 경우 안에 있는 값만 추출하기
             json_block = re.search(r"\{.*\}", text, flags=re.S).group(0)
             data = json.loads(json_block)
-        except: # 오류 나면 기본값 반환하기
+        except Exception:
             data = {
                 "standard": "100g",
                 "kcal": 0,
@@ -185,7 +192,7 @@ class QwenClient:
                 "protein": 0,
                 "fat": 0,
                 "sugar": 0,
-                "natrium": 0
+                "natrium": 0,
             }
 
         return data
@@ -193,10 +200,148 @@ class QwenClient:
 
 qwen = QwenClient()
 
+# =========================
+# Chroma RAG 설정
+# =========================
+import chromadb
+from chromadb.utils import embedding_functions
 
+# Chroma 저장 경로 (.env 에서 FOODY_CHROMA_DIR 로 지정 가능)
+CHROMA_DB_DIR = os.getenv("FOODY_CHROMA_DIR", "./chroma_foods")
+
+# Chroma 클라이언트 (영구 저장)
+chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+
+# 한국어 지원 임베딩 함수 (원하는 SentenceTransformer 로 변경 가능)
+ko_embedding = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=os.getenv(
+        "FOODY_EMBED_MODEL",
+        "jhgan/ko-sroberta-multitask"  # or "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    )
+)
+
+# food_nutrition 컬렉션 생성/로드
+food_collection = chroma_client.get_or_create_collection(
+    name="food_nutrition",
+    embedding_function=ko_embedding,
+)
+
+def build_chroma_from_db():
+    """
+    서버 시작 시, foods 테이블 내용을 Chroma에 인덱싱.
+    이미 데이터가 있다면 스킵 (중복 방지).
+    """
+    count = food_collection.count()
+    if count > 0:
+        print(f"[INFO] Existing Chroma collection already has {count} items. Skip building.")
+        return
+
+    print("[INFO] Building Chroma index from foods table...")
+
+    # 1) DB에서만 빨리 긁어오기
+    db = SessionLocal()
+    try:
+        foods: List[Foods] = db.query(Foods).all()
+        total = len(foods)
+        print(f"[INFO] Loaded {total} foods from DB.")
+    finally:
+        # 연결이 이미 끊겼어도 여기서 또 에러 안 터지게 방어
+        try:
+            db.close()
+        except Exception as e:
+            print(f"[WARN] Failed to close DB session cleanly: {e}")
+
+    if total == 0:
+        print("[INFO] No foods found in DB to index.")
+        return
+
+    # 2) 세션은 이미 닫힌 상태에서 → 임베딩 + Chroma 인덱싱
+    batch_size = 128
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        batch = foods[start:end]
+
+        ids = []
+        docs = []
+        metas = []
+
+        for f in batch:
+            ids.append(f.code)
+            docs.append(f"{f.name} {f.standard}")
+            metas.append(
+                {
+                    "name": f.name,
+                    "standard": f.standard,
+                    "kcal": float(f.kcal),
+                    "carb": float(f.carb),
+                    "protein": float(f.protein),
+                    "fat": float(f.fat),
+                    "sugar": float(f.sugar),
+                    "natrium": float(f.natrium),
+                }
+            )
+
+        food_collection.add(
+            ids=ids,
+            documents=docs,
+            metadatas=metas,
+        )
+        print(f"[INFO] Indexed {end}/{total} foods into Chroma...")
+
+    print("[INFO] Finished building Chroma index.")
+
+
+
+def rag_estimate_nutrition(food_name: str, top_k: int = 3) -> Optional[dict]:
+    """
+    Chroma를 사용해서 유사한 음식들의 영양정보를 가져와
+    Top-k 를 평균해서 통합 추정.
+    """
+    result = food_collection.query(
+        query_texts=[food_name],
+        n_results=top_k,
+    )
+
+    metadatas = result.get("metadatas", [[]])[0]
+    if not metadatas:
+        return None
+
+    # kcal 등은 평균, standard는 제일 유사한(첫 번째) 것 사용
+    n = len(metadatas)
+    sum_kcal = sum(m.get("kcal", 0.0) for m in metadatas)
+    sum_carb = sum(m.get("carb", 0.0) for m in metadatas)
+    sum_protein = sum(m.get("protein", 0.0) for m in metadatas)
+    sum_fat = sum(m.get("fat", 0.0) for m in metadatas)
+    sum_sugar = sum(m.get("sugar", 0.0) for m in metadatas)
+    sum_natrium = sum(m.get("natrium", 0.0) for m in metadatas)
+
+    best = metadatas[0]  # 가장 유사한 것 하나
+    estimated = {
+        "standard": best.get("standard", "100g"),
+        "kcal": sum_kcal / n,
+        "carb": sum_carb / n,
+        "protein": sum_protein / n,
+        "fat": sum_fat / n,
+        "sugar": sum_sugar / n,
+        "natrium": sum_natrium / n,
+    }
+    return estimated
+
+
+
+# =========================
 # FastAPI 앱 생성
-# 실제 로직이 돌아가는 부분
+# =========================
 app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
+
+
+@app.on_event("startup")
+def on_startup():
+    """
+    서버 시작 시 1번만 실행:
+    - foods 테이블 → Chroma 인덱싱
+    """
+    build_chroma_from_db()
 
 
 @app.post("/api/vlm/food", response_model=FoodResponse)
@@ -215,41 +360,51 @@ async def predict_food(
     except Exception:
         raise HTTPException(400, "이미지를 열 수 없습니다.")
 
-    # 1) 음식 이름 추론
+    # 3) 음식 이름 추론 (VLM)
     food_name = qwen.predict_food_name(pil_image)
     normalized_name = food_name.replace(" ", "")
+    print(f"[INFO] Predicted food name: {food_name} (normalized: {normalized_name})")
 
+    # 4) RDB에서 정확히 같은 이름이 있는지 먼저 체크
+    food = (
+        db.query(Foods)
+        .filter(func.replace(Foods.name, " ", "") == normalized_name)
+        .first()
+    )
 
+    # 응답에 보여줄 기준 이름 (DB에 있으면 DB 이름 기준, 없으면 모델 추론 그대로)
+    if food:
+        print(f"[INFO] Found exact match in DB: {food.name}")
+        response_name = food.name
+    else:
+        response_name = food_name
 
-    # # 4) DB 조회 - 부분 일치 기반
-    # # 공백 제거 후에 like 구문 통해서 일부 일치하는 값 찾기
-    # food = (
-    #     db.query(Foods)
-    #     .filter(func.replace(Foods.name, " ", "").like(f"%{normalized_name}%"))
-    #     .order_by(func.length(Foods.name))
-    #     .first()
-    # )
+    # 5) RAG로 Chroma에서 유사 음식들 검색 + 통합
+    est = rag_estimate_nutrition(food_name)
 
-    # # 5) DB에 있으면 → DB 값 그대로 응답
-    # if food:
-    #     print("[INFO] Food found in DB:", food.name)
-    #     return FoodResponse(
-    #         name=food.name,
-    #         category=food.category,
-    #         standard=food.standard,
-    #         kcal=food.kcal,
-    #         carb_g=food.carb_g,
-    #         protein_g=food.protein_g,
-    #         fat_g=food.fat_g,
-    #         sugar_g=food.sugar_g,
-    #         natrium_g=food.natrium_g,
-    #     )
+    if est:
+        print(f"[INFO] Estimated via Chroma RAG: {food_name}")
+    else:
+        # 6) Chroma에도 없으면
+        if food:
+            # (1) RDB에 값이 있으니 그걸 그대로 사용
+            print(f"[WARN] Not found in Chroma, but found in DB. Using DB values for {food.name}")
+            est = {
+                "standard": food.standard,
+                "kcal": float(food.kcal),
+                "carb": float(food.carb),
+                "protein": float(food.protein),
+                "fat": float(food.fat),
+                "sugar": float(food.sugar),
+                "natrium": float(food.natrium),
+            }
+        else:
+            # (2) RDB도 없으면 완전 LLM 추론
+            print(f"[WARN] Not found in DB or Chroma. Falling back to pure LLM for {food_name}")
+            est = qwen.estimate_nutrition_llm(food_name)
 
-    # 6) DB에 없으면  Qwen으로 영양소 추론 (DB INSERT 없음)
-    est = qwen.estimate_nutrition(food_name)
-    print("[INFO] Food not found in DB. Estimated:", food_name)
     return FoodResponse(
-        name=food_name,
+        name=response_name,
         standard=est["standard"],
         kcal=est["kcal"],
         carb=est["carb"],
