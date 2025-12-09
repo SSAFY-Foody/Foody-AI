@@ -42,28 +42,26 @@ class Foods(Base):
 
     code      = Column(String(45), primary_key=True)   # PK
     name      = Column(String(30), nullable=False)     # 음식 이름
-    category  = Column(String(30), nullable=False)     # 카테고리
     standard  = Column(String(10), nullable=False)     # 기준량
     kcal      = Column(Float, nullable=False, default=0)
-    carb_g    = Column(Float, nullable=False, default=0)
-    protein_g = Column(Float, nullable=False, default=0)
-    fat_g     = Column(Float, nullable=False, default=0)
-    sugar_g   = Column(Float, nullable=False, default=0)
-    natrium_g = Column(Float, nullable=False, default=0)
+    carb    = Column(Float, nullable=False, default=0)
+    protein = Column(Float, nullable=False, default=0)
+    fat     = Column(Float, nullable=False, default=0)
+    sugar   = Column(Float, nullable=False, default=0)
+    natrium = Column(Float, nullable=False, default=0)
 
 
 #응답 모델(JSON) 생성
 
 class FoodResponse(BaseModel):
     name: str
-    category: str
     standard: str
     kcal: float
-    carb_g: float
-    protein_g: float
-    fat_g: float
-    sugar_g: float
-    natrium_g: float
+    carb: float
+    protein: float
+    fat: float
+    sugar: float
+    natrium: float
 
 
 # ai 모델 로드
@@ -142,14 +140,13 @@ class QwenClient:
 
 예시 출력:
 {{
-  "category": "한식",
   "standard": "100g",
   "kcal": 154,
-  "carb_g": 3.2,
-  "protein_g": 11.2,
-  "fat_g": 10.1,
-  "sugar_g": 1.1,
-  "natrium_g": 250
+  "carb": 3.2,
+  "protein": 11.2,
+  "fat": 10.1,
+  "sugar": 1.1,
+  "natrium": 250
 }}
         """
 
@@ -182,14 +179,13 @@ class QwenClient:
             data = json.loads(json_block)
         except: # 오류 나면 기본값 반환하기
             data = {
-                "category": "기타",
                 "standard": "100g",
                 "kcal": 0,
-                "carb_g": 0,
-                "protein_g": 0,
-                "fat_g": 0,
-                "sugar_g": 0,
-                "natrium_g": 0
+                "carb": 0,
+                "protein": 0,
+                "fat": 0,
+                "sugar": 0,
+                "natrium": 0
             }
 
         return data
@@ -203,7 +199,7 @@ qwen = QwenClient()
 app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
 
 
-@app.post("/food", response_model=FoodResponse)
+@app.post("/vlm/food", response_model=FoodResponse)
 async def predict_food(
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -254,12 +250,11 @@ async def predict_food(
     print("[INFO] Food not found in DB. Estimated:", food_name)
     return FoodResponse(
         name=food_name,
-        category=est["category"],
         standard=est["standard"],
         kcal=est["kcal"],
-        carb_g=est["carb_g"],
-        protein_g=est["protein_g"],
-        fat_g=est["fat_g"],
-        sugar_g=est["sugar_g"],
-        natrium_g=est["natrium_g"],
+        carb=est["carb"],
+        protein=est["protein"],
+        fat=est["fat"],
+        sugar=est["sugar"],
+        natrium=est["natrium"],
     )
