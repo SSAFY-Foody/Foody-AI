@@ -199,7 +199,7 @@ qwen = QwenClient()
 app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
 
 
-@app.post("/vlm/food", response_model=FoodResponse)
+@app.post("/api/vlm/food", response_model=FoodResponse)
 async def predict_food(
     image: UploadFile = File(...),
     db: Session = Depends(get_db),
