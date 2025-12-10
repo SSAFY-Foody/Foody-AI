@@ -87,6 +87,7 @@ class AiReportRequestModel(BaseModel):
     # 유저 정보
     stdInfo: StdInfo
     userActivityLevelDesc: str
+    userIsDiaBetes: bool
 
     # 하루치 종합 정보
     dayTotalKcal: float
@@ -348,7 +349,14 @@ def on_startup():
 # Spring AiReportService.analyzeMeal() 이 호출할 엔드포인트
 @app.post("/api/analysis/report", response_model=AiReportResponse)
 def analyze_meal(ai_request: AiReportRequestModel):
-    # 캐릭터 목록 확보 (캐시 우선)
+    # 요청 바디에 들어온 실제 값 확인
+    print(f"[INFO] userIsDiaBetes = {ai_request.userIsDiaBetes}")
+
+    if ai_request.userIsDiaBetes:
+        print("[INFO] 당뇨병 환자용 AI 분석 요청입니다.")
+    else:
+        print("[INFO] 일반 사용자용 AI 분석 요청입니다.")
+
     if not CHARACTERS_CACHE:
         try:
             characters = load_characters_from_db()
