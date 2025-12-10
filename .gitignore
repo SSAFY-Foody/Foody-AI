@@ -14,3 +14,19 @@ venv/
 
 # Chroma_Db 
 /vlm/chroma_foods/
+*.sqlite3
+/vlm/chroma_debug.py
+/vlm/chroma_dump.json
+
+# ======================
+# Windows ADS (너가 물어본 그거)
+# ======================
+*Zone.Identifier
+
+ref.txt
+
+# ======================
+# OS Junk
+# ======================
+.DS_Store
+Thumbs.db
