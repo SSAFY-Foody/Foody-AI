@@ -14,3 +14,12 @@ venv/
 
 # Chroma_Db 
 /vlm/chroma_foods/
+/vlm/chroma_debug.py
+/vlm/chroma_debug.py
+
+# ======================
+# Windows ADS (너가 물어본 그거)
+# ======================
+*Zone.Identifier
+
+./ref.txt
