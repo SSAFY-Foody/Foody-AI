@@ -9,6 +9,14 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 
+from langchain_community.vectorstores import Chroma
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
+
+DIABETES_DB_DIR = "./chroma_diabetes_guideline"
+DIABETES_COLLECTION_NAME = "diabetes_guideline"
+DIABETES_COLLECTION = None  # startup 때 로드
+
 
 load_dotenv()  # .env 파일 내용 읽어오기
 
@@ -107,7 +115,7 @@ class AiReportResponse(BaseModel):
     characterId: int
 
 
-# 프롬프트 빌더
+# 공통 프롬프트 빌더 (비당뇨용)
 
 def build_prompt(ai_request: AiReportRequestModel,
                  characters: List[Dict[str, Any]]) -> str:
@@ -250,6 +258,140 @@ description에는 예를 들어
     return prompt.strip()
 
 
+# 당뇨용: 당뇨병 진료지침 RAG 컨텍스트 빌더
+
+def build_diabetes_context(ai_request: AiReportRequestModel) -> str:
+    """
+    당뇨병 환자의 하루 섭취 요약으로 Chroma에 질의해서
+    지침 관련 문단 몇 개를 가져온다.
+    """
+    global DIABETES_COLLECTION
+    if DIABETES_COLLECTION is None:
+        return ""
+
+    query_text = (
+        f"당뇨병 환자의 하루 식단 요약. "
+        f"총 칼로리 {ai_request.dayTotalKcal} kcal, "
+        f"탄수화물 {ai_request.dayTotalCarb} g, "
+        f"단백질 {ai_request.dayTotalProtein} g, "
+        f"지방 {ai_request.dayTotalFat} g, "
+        f"당류 {ai_request.dayTotalSugar} g, "
+        f"나트륨 {ai_request.dayTotalNatrium} mg. "
+        "당뇨병 환자의 식사요법, 혈당 관리, 탄수화물 조절, 나트륨 제한에 대한 진료지침."
+    )
+
+    try:
+        # 랭쳋인 방싱 : Document 형태로 반환됨
+        docs = DIABETES_RETRIEVER.get_relevant_documents(query_text)
+        if not docs:
+            return ""
+        # 각 document의 page_content만 꺼내서 하나의 문맥 블록으로 합치는 작업
+        context = "\n\n".join(docs)
+        return context
+    except Exception as e:
+        print(f"[WARN] 당뇨 지침 Chroma 조회 실패: {e}")
+        return ""
+
+
+def build_prompt_diabetes(ai_request: AiReportRequestModel,
+                          characters: List[Dict[str, Any]],
+                          diabetes_context: str) -> str:
+    """
+    당뇨 환자 전용 프롬프트.
+    - 기본 캐릭터/점수 로직은 그대로
+    - 추가로 RAG에서 가져온 '당뇨병 진료지침 요약'을 참고하게 함
+    """
+    request_text = json.dumps(
+        ai_request.model_dump(),
+        ensure_ascii=False,
+        indent=2
+    )
+
+    characters_text_lines = []
+    for ch in characters:
+        desc = ch.get("ai_learning_comment", "")
+        characters_text_lines.append(
+            f"- id: {ch['id']}\n"
+            f"  name: {ch['name']}\n"
+            f"  description: {desc}"
+        )
+    characters_block = "\n\n".join(characters_text_lines)
+
+    diabetes_block = diabetes_context if diabetes_context else "※ 검색된 진료지침 문단이 충분하지 않습니다. 일반적인 당뇨병 식사요법 원칙을 바탕으로 답변하세요."
+
+    prompt = f"""
+너는 식단 관리 서비스 '푸디(Foody)'의 캐릭터 추천 AI이자,
+당뇨병 환자 식사요법에 익숙한 전문가야.
+
+지금 사용자는 **당뇨병을 가지고 있다(userIsDiaBetes = true)**.
+당뇨병 환자의 혈당 관리, 저혈당/고혈당 위험, 체중 관리, 합병증 예방 관점에서
+조금 더 엄격하게 식단을 평가해야 한다.
+
+너에게는 다음 정보가 주어진다:
+- [1] 오늘자 AI 분석 요청 전체 JSON (AiReportRequest)
+- [2] DB에서 가져온 푸디 캐릭터 목록 (id, name, ai_learning_comment)
+- [3] 당뇨병 진료지침에서 검색한 관련 문단 요약 (RAG 결과)
+
+너의 임무:
+1) 오늘 하루의 섭취 성향을 가장 잘 표현하는 캐릭터 1명을 선택한다.
+2) 오늘 식단에 대한 평가 점수(score)를 0~100 사이 실수로 준다.
+   - 당뇨병 환자라는 점을 고려하여, 고당분/고GI/고탄수화물/고나트륨 섭취에 대해
+     일반 사용자보다 더 큰 감점을 줄 수 있다.
+3) 한국어로 맞춤 추천 멘트(comment)를 작성한다.
+   - 오늘 섭취 성향 요약
+   - 혈당/당뇨 관리 관점에서 좋았던 점 / 아쉬운 점
+   - 내일부터 실천할 수 있는 개선 팁 2~3가지
+4) 약물 용량 조절이나 인슐린 조절과 같은 구체적인 의료 행위는 절대로 지시하지 말고,
+   필요한 경우 "주치의와 상의해야 한다"는 표현으로만 안내한다.
+
+최종 출력은 반드시 아래 JSON 형식 ONLY로 출력해야 한다:
+
+{{
+  "characterId": <정수>,
+  "score": <실수 또는 정수>,
+  "comment": "<한국어 멘트>"
+}}
+
+그 외 어떤 문장도 출력하지 마라.
+특히 설명, 해설, 마크다운, 자연어 문장은 금지다.
+오직 위 JSON 한 덩어리만 출력해라.
+
+------------------------------------------------------------
+[1] 오늘자 AI 분석 요청 정보 (AiReportRequest JSON)
+
+아래 JSON은 Spring 서버에서 하루치 식단을 정리해 보낸 데이터이다.
+
+{request_text}
+
+(설명은 공통 버전과 동일하다.)
+
+------------------------------------------------------------
+[2] 1일 기준 Foody 캐릭터 설명 (DB에서 불러온 단기판)
+
+캐릭터 목록:
+
+{characters_block}
+
+캐릭터 선택 규칙은 비당뇨 사용자와 동일하나,
+- 당류/탄수화물/나트륨 과다일 때는
+  그에 해당하는 캐릭터(예: 짜구리, 달다구리, 주전부엉, 왕마니 등)를
+  조금 더 적극적으로 선택해라.
+
+------------------------------------------------------------
+[3] 당뇨병 진료지침 RAG 결과
+
+아래 내용은 당뇨병 진료지침/전문 문헌에서 검색한 관련 문단이다.
+이 내용을 근거로 혈당 관리, 식사요법, 탄수화물/당류/나트륨 조절에 대해
+사용자에게 전문성을 느낄 수 있는 조언을 해라.
+
+{diabetes_block}
+
+이 진료지침과 모순되는 조언을 하지 말고,
+가능하면 진료지침의 요지를 사용자가 이해하기 쉬운 말로 풀어 써라.
+"""
+    return prompt.strip()
+
+
 # Gemini 호출
 
 def call_gemini(prompt: str) -> Dict[str, Any]:
@@ -332,9 +474,11 @@ CHARACTERS_CACHE: List[Dict[str, Any]] = []
 @app.on_event("startup")
 def on_startup():
     """
-    서버 시작 시 캐릭터 목록 캐싱
+    서버 시작 시 캐릭터 목록 + 당뇨 RAG 컬렉션 로딩
     """
-    global CHARACTERS_CACHE
+    global CHARACTERS_CACHE, DIABETES_COLLECTION
+
+    # 캐릭터 캐시
     try:
         CHARACTERS_CACHE = load_characters_from_db()
         if not CHARACTERS_CACHE:
@@ -345,17 +489,32 @@ def on_startup():
         print(f"[ERROR] characters 로딩 실패: {e}")
         CHARACTERS_CACHE = []
 
+    # 당뇨 지침 Chroma (LangChain)
+    try:
+        # 인덱싱할 때 썼던 임베딩 모델 이름이랑 맞춰야 함!
+        embeddings = HuggingFaceEmbeddings(
+            model_name="sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+        vectordb = Chroma(
+            persist_directory=DIABETES_DB_DIR,
+            collection_name=DIABETES_COLLECTION_NAME,
+            embedding_function=embeddings,
+        )
+
+        DIABETES_RETRIEVER = vectordb.as_retriever(search_kwargs={"k": 4})
+        print("[INFO] Diabetes guideline retriever 로드 완료.")
+    except Exception as e:
+        print(f"[WARN] Diabetes guideline Chroma 로드 실패: {e}")
+        DIABETES_RETRIEVER = None
+
+
 
 # Spring AiReportService.analyzeMeal() 이 호출할 엔드포인트
 @app.post("/api/analysis/report", response_model=AiReportResponse)
 def analyze_meal(ai_request: AiReportRequestModel):
     # 요청 바디에 들어온 실제 값 확인
     print(f"[INFO] userIsDiaBetes = {ai_request.userIsDiaBetes}")
-
-    if ai_request.userIsDiaBetes:
-        print("[INFO] 당뇨병 환자용 AI 분석 요청입니다.")
-    else:
-        print("[INFO] 일반 사용자용 AI 분석 요청입니다.")
 
     if not CHARACTERS_CACHE:
         try:
@@ -369,8 +528,14 @@ def analyze_meal(ai_request: AiReportRequestModel):
         characters = CHARACTERS_CACHE
         print("[INFO] 캐릭터 정보를 캐시에서 사용합니다.")
 
-    # 프롬프트 생성
-    prompt = build_prompt(ai_request, characters)
+    # 당뇨 여부에 따라 프롬프트 분기
+    if ai_request.userIsDiaBetes:
+        print("[INFO] 당뇨병 환자용 AI 분석 요청입니다. (RAG 사용)")
+        diabetes_context = build_diabetes_context(ai_request)
+        prompt = build_prompt_diabetes(ai_request, characters, diabetes_context)
+    else:
+        print("[INFO] 일반 사용자용 AI 분석 요청입니다. (기존 프롬프트)")
+        prompt = build_prompt(ai_request, characters)
 
     # Gemini 호출
     try:
@@ -404,7 +569,7 @@ def analyze_meal(ai_request: AiReportRequestModel):
         except (TypeError, ValueError):
             score = None
 
-    # FastAPI 에서 Spring JSON
+    # FastAPI → Spring JSON
     return AiReportResponse(
         characterId=character_id,
         score=score,

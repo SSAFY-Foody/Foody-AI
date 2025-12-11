@@ -18,6 +18,10 @@ venv/
 /vlm/chroma_debug.py
 /vlm/chroma_dump.json
 
+/analysis/chroma_diabetes_guideline/
+*.sqlite3
+
+
 # ======================
 # Windows ADS (너가 물어본 그거)
 # ======================
