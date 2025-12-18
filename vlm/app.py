@@ -114,16 +114,19 @@ class QwenClient:
                     {
                         "type": "text",
                         "text": (
-                            "당신은 한국 음식 이미지 분류기입니다.\n"
-                            "절대로 설명하지 말고, 절대로 영어를 섞지 말고,\n"
-                            "음식 이름을 한국어 한 단어로만 출력하세요.\n\n"
-                            "예시:\n"
-                            "김밥\n"
-                            "라면\n"
-                            "불고기\n"
-                            "오믈렛\n"
-                            "샐러드\n\n"
-                            "정확히 한 단어만 출력하세요."
+                            "한국 음식 이미지를 분류합니다. 음식 이름을 한국어로만 출력하세요.\n\n"
+                            "중요: 절대로 영어 단어를 사용하지 마세요!\n"
+                            "예: 'omelette' (X) → '오믈렛' (O)\n\n"
+                            "한국 음식 예시:\n"
+                            "- 계란말이: 계란으로 만든 네모난 한국식 계란 요리 (돌돌 말려있음)\n"
+                            "- 김밥: 김으로 싼 밥\n"
+                            "- 불고기: 양념한 고기 구이\n"
+                            "- 떡볶이: 빨간 국물에 떡\n\n"
+                            "주의사항:\n"
+                            "- 계란말이 ≠ 오믈렛 (계란말이는 네모나고 말려있음)\n"
+                            "- 반드시 한국어로만 답변\n"
+                            "- 한 단어로만 출력\n\n"
+                            "이미지의 음식 이름:"
                         ),
                     },
                 ],
@@ -150,7 +153,43 @@ class QwenClient:
         ).strip()
 
         # "김밥입니다." 같은 경우 대비 → 첫 단어만 사용
-        return text.split()[0]
+        food_name = text.split()[0]
+        
+        # 후처리: 영어 단어를 한국어로 변환
+        food_name = self._post_process_food_name(food_name)
+        
+        return food_name
+    
+    def _post_process_food_name(self, food_name: str) -> str:
+        """영어 음식 이름을 한국어로 변환하고 검증"""
+        
+        # 영어 → 한국어 매핑
+        translations = {
+            "omelette": "오믈렛",
+            "omelet": "오믈렛",
+            "egg roll": "계란말이",
+            "korean egg roll": "계란말이",
+            "rolled egg": "계란말이",
+            "salad": "샐러드",
+            "rice": "밥",
+            "kimchi": "김치",
+            "kimbap": "김밥",
+            "ramen": "라면",
+        }
+        
+        # 소문자로 변환하여 비교
+        lower_name = food_name.lower().strip()
+        
+        # 영어 단어 발견 시 한국어로 변환
+        if lower_name in translations:
+            return translations[lower_name]
+        
+        # 부분 일치 처리
+        for eng, kor in translations.items():
+            if eng in lower_name:
+                return kor
+        
+        return food_name
 
     # 2) (Fallback) 순수 LLM 기반 영양 추론 (RAG 실패 시 마지막 보루)
     def estimate_nutrition_llm(self, food_name: str) -> dict:
