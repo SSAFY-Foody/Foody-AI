@@ -84,11 +84,25 @@ class QwenClient:
         self.processor = AutoProcessor.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct"
         )
+        
+        # 기본 모델 로드
         self.model = AutoModelForVision2Seq.from_pretrained(
             "Qwen/Qwen2.5-VL-3B-Instruct",
             torch_dtype=torch.float16,
             device_map="auto",  # 필요시 "cpu" 로 변경
         )
+        
+        # Fine-tuned LoRA 어댑터 로드 (있는 경우)
+        import os
+        lora_path = "./qwen_vlm_model"
+        if os.path.exists(lora_path) and os.path.exists(os.path.join(lora_path, "adapter_config.json")):
+            print(f"[INFO] Loading fine-tuned LoRA adapter from {lora_path}")
+            from peft import PeftModel
+            self.model = PeftModel.from_pretrained(self.model, lora_path)
+            print("[INFO] Fine-tuned model loaded successfully!")
+        else:
+            print("[INFO] No fine-tuned model found. Using base model.")
+
 
     # 1) 음식 이미지를 보고 음식 명 추론
     def predict_food_name(self, pil_image: Image.Image) -> str:
