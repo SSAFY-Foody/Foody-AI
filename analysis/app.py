@@ -49,7 +49,7 @@ def load_characters_from_db() -> List[Dict[str, Any]]:
     try:
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT id, name, ai_learning_comment FROM characters WHERE id >= 2 ORDER BY id ASC"
+                "SELECT id, name, ai_learning_comment FROM characters WHERE id >=3  ORDER BY id ASC"
             )
             rows = cursor.fetchall()
             return rows
