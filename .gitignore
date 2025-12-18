@@ -23,7 +23,7 @@ venv/
 
 
 # ======================
-# Windows ADS (너가 물어본 그거)
+# Windows ADS
 # ======================
 *Zone.Identifier
 
@@ -34,3 +34,6 @@ ref.txt
 # ======================
 .DS_Store
 Thumbs.db
+
+#vlm 데이터 폴더 제외
+vlm/21.한국음식/
