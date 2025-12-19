@@ -16,6 +16,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 DIABETES_DB_DIR = "./chroma_diabetes_guideline"
 DIABETES_COLLECTION_NAME = "diabetes_guideline"
 DIABETES_COLLECTION = None  # startup 때 로드
+DIABETES_RETRIEVER = None  # startup 때 로드
 
 
 load_dotenv()  # .env 파일 내용 읽어오기
@@ -229,22 +230,19 @@ description에는 예를 들어
 ------------------------------------------------------------
 [4] 점수(score) 산정 기준 (반드시 아래 수식 그대로 계산)
 
-너는 "하루 리포트"를 만들지만, 점수는 끼니(meals) 단위로 먼저 계산한 뒤
-그 평균을 하루 점수로 사용한다.
+점수는 하루 전체 섭취량을 하루 권장량과 비교하여 계산한다.
 
-1) 식사 타입별 "한 끼 권장량" 정의
-- 한 끼 권장량(영양소별) = stdInfo(일일 권장량) / 식사타입계수
-- 식사타입계수:
-  - BREAKFAST, LUNCH, DINNER => 3
-  - SNACK => 6
+1) 영양소별 비율 R 계산 (하루 전체 기준)
+- R = (하루 총 섭취량) / (하루 권장량)
 
-예) breakfast의 한 끼 권장 칼로리 = stdKcal / 3
-예) snack의 한 끼 권장 당류 = stdSugar / 6
+예시:
+- R_칼로리 = dayTotalKcal / stdKcal
+- R_탄수화물 = dayTotalCarb / stdCarb
+- R_단백질 = dayTotalProtein / stdProtein
+- R_지방 = dayTotalFat / stdFat
+- R_당류 = dayTotalSugar / stdSugar
 
-2) 영양소별 비율 R 계산 (각 끼니별로 계산)
-- R = (해당 끼니의 섭취량) / (해당 끼니의 한 끼 권장량)
-
-3) 영양소별 점수 함수 (나트륨은 점수에서 제외!)
+2) 영양소별 점수 함수 (나트륨은 점수에서 제외!)
 - 점수(R): (칼로리/탄수/단백질/지방에 적용)
 
 점수(R) =
@@ -253,10 +251,10 @@ description에는 예를 들어
   90 + (1.2 - R) × 100         if 1.1 < R ≤ 1.2
   80 + (R - 0.7) × 100         if 0.7 ≤ R < 0.8
   80 + (1.3 - R) × 100         if 1.2 < R ≤ 1.3
-  70 + (R - 0.6) × 100         if 0.6 < R < 0.7
+  70 + (R - 0.6) × 100         if 0.6 ≤ R < 0.7
   70 + (1.4 - R) × 100         if 1.3 < R ≤ 1.4
   max(0, 70 - (R - 1.4) × 100) if R > 1.4
-  max(0, 70 - (0.6 - R) × 100) if R ≤ 0.6
+  max(0, 70 - (0.6 - R) × 100) if R < 0.6
 
 - 점수_당류(R): (당류는 "낮을수록 높은 점수" 규칙 적용)
 
@@ -266,7 +264,7 @@ description에는 예를 들어
   80 + (1.4 - R) × 50          if 1.2 < R ≤ 1.4
   max(0, 80 - (R - 1.4) × 100) if R > 1.4
 
-4) 영양소별 가중치 (나트륨 제외)
+3) 영양소별 가중치 (나트륨 제외)
 - 칼로리 0.30
 - 탄수화물 0.20
 - 단백질 0.25
@@ -274,22 +272,20 @@ description에는 예를 들어
 - 당류 0.10
 - 나트륨은 점수 계산에서 제외한다. (감점/가중치 0)
 
-5) 끼니 점수 계산
-- mealScore = (kcalScore×0.30) + (carbScore×0.20) + (proteinScore×0.25)
-            + (fatScore×0.15) + (sugarScore×0.10)
+4) 하루 최종 점수(score) 계산
+- score = (kcalScore×0.30) + (carbScore×0.20) + (proteinScore×0.25)
+        + (fatScore×0.15) + (sugarScore×0.10)
 - 각 영양소 점수는 0~100으로 clamp 한다.
-
-6) 하루 최종 점수(score) 계산
-- 하루 점수(score) = (존재하는 meals의 mealScore 단순 평균)
 - 소수점은 1자리 반올림 (예: 83.4)
 
-7) 퍼센티지 표시에 대한 내부 계산(멘트에 참고 가능)
-- 퍼센티지 = (섭취량 / 한 끼 권장량) × 100
+5) 퍼센티지 표시에 대한 내부 계산(멘트에 참고 가능)
+- 퍼센티지 = (하루 총 섭취량 / 하루 권장량) × 100
 - 이 퍼센티지는 멘트에서 "권장량 대비 몇 %" 같은 표현을 만들 때 참고해도 된다.
 
 ※ 주의:
 - 나트륨은 점수에서 제외하지만, 멘트/캐릭터 선택에는 참고할 수 있다.
 - score는 반드시 위 계산으로 산출한 값이어야 한다(감으로 주지 마라).
+- 하루 전체 섭취량(dayTotalXXX)을 사용하여 계산하며, 끼니별 평균을 내지 않는다.
 
 [5] 출력 형식
 
@@ -329,12 +325,12 @@ def build_diabetes_context(ai_request: AiReportRequestModel) -> str:
     )
 
     try:
-        # 랭쳋인 방싱 : Document 형태로 반환됨
+        # 랭쳋인 방식 : Document 형태로 반환됨
         docs = DIABETES_RETRIEVER.get_relevant_documents(query_text)
         if not docs:
             return ""
         # 각 document의 page_content만 꺼내서 하나의 문맥 블록으로 합치는 작업
-        context = "\n\n".join(docs)
+        context = "\n\n".join([doc.page_content for doc in docs])
         return context
     except Exception as e:
         print(f"[WARN] 당뇨 지침 Chroma 조회 실패: {e}")
@@ -524,7 +520,7 @@ def on_startup():
     """
     서버 시작 시 캐릭터 목록 + 당뇨 RAG 컬렉션 로딩
     """
-    global CHARACTERS_CACHE, DIABETES_COLLECTION
+    global CHARACTERS_CACHE, DIABETES_COLLECTION, DIABETES_RETRIEVER
 
     # 캐릭터 캐시
     try:
