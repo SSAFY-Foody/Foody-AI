@@ -37,3 +37,5 @@ Thumbs.db
 
 #vlm 데이터 폴더 제외
 vlm/dataset/
+vlm/yolov3
+vlm/visionmodel
