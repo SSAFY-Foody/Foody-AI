@@ -359,32 +359,49 @@ def build_chroma_from_db():
     print("[INFO] Finished building Chroma index.")
 
 
-def rag_estimate_nutrition(food_name: str, top_k: int = 3) -> Optional[dict]:
-    """Chroma로 유사 음식 영양정보 Top-k 평균 추정"""
+def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: float = 1.0) -> Optional[dict]:
+    """Chroma로 유사 음식 영양정보 검색 및 추정 (Top-1 선택)"""
     result = food_collection.query(query_texts=[food_name], n_results=top_k)
 
     metadatas = result.get("metadatas", [[]])[0]
+    distances = result.get("distances", [[]])[0]
+    documents = result.get("documents", [[]])[0]
+
     if not metadatas:
+        print(f"[WARN] No RAG results found for '{food_name}'")
         return None
 
-    n = len(metadatas)
-    sum_kcal = sum(m.get("kcal", 0.0) for m in metadatas)
-    sum_carb = sum(m.get("carb", 0.0) for m in metadatas)
-    sum_protein = sum(m.get("protein", 0.0) for m in metadatas)
-    sum_fat = sum(m.get("fat", 0.0) for m in metadatas)
-    sum_sugar = sum(m.get("sugar", 0.0) for m in metadatas)
-    sum_natrium = sum(m.get("natrium", 0.0) for m in metadatas)
+    # 🔍 상세 로깅: 검색 결과 출력
+    print(f"[DEBUG] RAG Search Results for '{food_name}':")
+    for i, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances)):
+        print(f"  [{i+1}] {doc} | distance={dist:.4f}")
+        print(f"      kcal={meta.get('kcal')}, carb={meta.get('carb')}g, "
+              f"protein={meta.get('protein')}g, fat={meta.get('fat')}g")
 
-    best = metadatas[0]
-    return {
-        "standard": best.get("standard", "100g"),
-        "kcal": sum_kcal / n,
-        "carb": sum_carb / n,
-        "protein": sum_protein / n,
-        "fat": sum_fat / n,
-        "sugar": sum_sugar / n,
-        "natrium": sum_natrium / n,
+    # 가장 유사한 결과 선택 (Top-1)
+    best_meta = metadatas[0]
+    best_distance = distances[0]
+
+    # 거리 임계값 체크
+    if best_distance > distance_threshold:
+        print(f"[WARN] Best match distance ({best_distance:.4f}) exceeds threshold ({distance_threshold})")
+        print(f"[WARN] Result may be inaccurate for '{food_name}'")
+
+    # Top-1만 사용 (평균 제거)
+    result_data = {
+        "standard": best_meta.get("standard", "100g"),
+        "kcal": float(best_meta.get("kcal", 0)),
+        "carb": float(best_meta.get("carb", 0)),
+        "protein": float(best_meta.get("protein", 0)),
+        "fat": float(best_meta.get("fat", 0)),
+        "sugar": float(best_meta.get("sugar", 0)),
+        "natrium": float(best_meta.get("natrium", 0)),
     }
+
+    print(f"[INFO] Selected nutrition data: kcal={result_data['kcal']}, "
+          f"carb={result_data['carb']}g, protein={result_data['protein']}g, fat={result_data['fat']}g")
+
+    return result_data
 
 
 # =========================
@@ -415,9 +432,10 @@ async def predict_food(
         raise HTTPException(400, "이미지를 열 수 없습니다.")
 
     # 3) 음식 이름 추론 (VLM)
+    print(f"\n{'='*80}")
     food_name = qwen.predict_food_name(pil_image)
     normalized_name = food_name.replace(" ", "")
-    print(f"[INFO] Predicted food name: {food_name} (normalized: {normalized_name})")
+    print(f"[INFO] 🔍 VLM Prediction: '{food_name}' (normalized: '{normalized_name}')")
 
     # 4) RDB exact match (공백 제거 비교)
     food = (
@@ -426,30 +444,44 @@ async def predict_food(
         .first()
     )
 
-    response_name = food.name if food else food_name
+    # 5) 영양 성분 결정 로직
     if food:
-        print(f"[INFO] Found exact match in DB: {food.name}")
-
-    # 5) RAG
-    est = rag_estimate_nutrition(food_name)
-
-    if est:
-        print(f"[INFO] Estimated via Chroma RAG: {food_name}")
+        # ✅ DB에 정확히 일치하는 음식이 있으면 DB 데이터 사용
+        print(f"[INFO] ✅ Found exact match in DB: '{food.name}' (code: {food.code})")
+        print(f"[INFO] 💾 Using DB nutrition data directly (skipping RAG)")
+        
+        response_name = food.name
+        est = {
+            "standard": food.standard,
+            "kcal": float(food.kcal),
+            "carb": float(food.carb),
+            "protein": float(food.protein),
+            "fat": float(food.fat),
+            "sugar": float(food.sugar),
+            "natrium": float(food.natrium),
+        }
     else:
-        if food:
-            print(f"[WARN] Not found in Chroma, but found in DB. Using DB values for {food.name}")
-            est = {
-                "standard": food.standard,
-                "kcal": float(food.kcal),
-                "carb": float(food.carb),
-                "protein": float(food.protein),
-                "fat": float(food.fat),
-                "sugar": float(food.sugar),
-                "natrium": float(food.natrium),
-            }
+        # ❌ DB에 없으면 RAG로 유사 음식 검색
+        print(f"[INFO] ❌ No exact match in DB for '{normalized_name}'")
+        print(f"[INFO] 🔎 Starting RAG search for '{food_name}'...")
+        
+        response_name = food_name
+        est = rag_estimate_nutrition(food_name)
+        
+        if est:
+            print(f"[INFO] ✅ RAG search successful")
         else:
-            print(f"[WARN] Not found in DB or Chroma. Falling back to pure LLM for {food_name}")
+            # RAG도 실패하면 LLM으로 추정
+            print(f"[INFO] ⚠️ RAG failed, using LLM estimation for '{food_name}'")
             est = qwen.estimate_nutrition_llm(food_name)
+
+    # 최종 결과 로깅
+    print(f"[INFO] 📊 Final Response:")
+    print(f"       name='{response_name}', standard='{est.get('standard')}'")
+    print(f"       kcal={round2(est.get('kcal', 0))}, carb={round2(est.get('carb', 0))}g")
+    print(f"       protein={round2(est.get('protein', 0))}g, fat={round2(est.get('fat', 0))}g")
+    print(f"       sugar={round2(est.get('sugar', 0))}g, natrium={round2(est.get('natrium', 0))}mg")
+    print(f"{'='*80}\n")
 
     return FoodResponse(
         name=response_name,
@@ -461,3 +493,14 @@ async def predict_food(
         sugar=round2(est.get("sugar", 0)),
         natrium=round2(est.get("natrium", 0)),
     )
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0", 
+        port=8000,    
+        reload=False      
+    )
+
