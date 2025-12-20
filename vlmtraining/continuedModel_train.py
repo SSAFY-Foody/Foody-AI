@@ -37,8 +37,8 @@ logger = logging.getLogger("qwen25-train-v5")
 @dataclass
 class TrainCfg:
     base_model: str = "Qwen/Qwen2.5-VL-3B-Instruct"
-    load_dir: str = "./trained_models/qwen25_v5"
-    output_dir: str = "./trained_models/qwen25_v6"
+    load_dir: str = "./trained_models/qwen25_v7"
+    output_dir: str = "./trained_models/qwen25_v8"
     train_csv: str = "./train_csvs/train_3.csv"
 
     train_image_size: Tuple[int, int] = (224, 224)
@@ -53,7 +53,7 @@ class TrainCfg:
     )
 
     # Training
-    num_train_epochs: float = 9.0
+    num_train_epochs: float = 12.0
     per_device_train_batch_size: int = 1
     gradient_accumulation_steps: int = 8
     learning_rate: float = 5e-5
