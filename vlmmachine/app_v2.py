@@ -1,499 +1,583 @@
-# app.py
+import io
 import os
 import json
 import re
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
+
+from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from pydantic import BaseModel
+from PIL import Image
+
+import torch
+from transformers import AutoProcessor, AutoModelForVision2Seq
+
+from sqlalchemy import create_engine, Column, String, Float, func
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 from dotenv import load_dotenv
-import requests
-import pymysql
-
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-
 
 # =========================
-# ENV / CONSTANTS
+# .env 로드
 # =========================
-DIABETES_DB_DIR = "./chroma_diabetes_guideline"
-DIABETES_COLLECTION_NAME = "diabetes_guideline"
-
 load_dotenv()
 
-GMS_KEY = os.getenv("GMS_KEY")
-GEMINI_URL = os.getenv("AI_URL")
-
-DB_HOST = os.getenv("DB_HOST")
-DB_PORT = int(os.getenv("DB_PORT", "3306"))
-DB_USER = os.getenv("DB_USER")
-DB_PASSWORD = os.getenv("DB_PASSWORD")
-DB_NAME = os.getenv("DB_NAME")
-
-
 # =========================
-# GLOBALS (중요: 전역으로 잡아야 startup에서 세팅한 걸 함수들이 사용함)
+# SQL 설정
 # =========================
-CHARACTERS_CACHE: List[Dict[str, Any]] = []
-DIABETES_RETRIEVER = None  # ✅ 전역 retriever
+DATABASE_URL = os.getenv("FOODY_DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("FOODY_DATABASE_URL 환경변수가 설정되어 있지 않습니다.")
+
+engine = create_engine(DATABASE_URL, echo=False, future=True)
+SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+Base = declarative_base()
 
 
-# =========================
-# DB
-# =========================
-def get_db_connection():
-    return pymysql.connect(
-        host=DB_HOST,
-        port=DB_PORT,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        db=DB_NAME,
-        charset="utf8mb4",
-        cursorclass=pymysql.cursors.DictCursor,
-    )
-
-
-def load_characters_from_db() -> List[Dict[str, Any]]:
-    """
-    ⚠️ 규칙상 id=2(새싹푸디)는 '선정하면 안됨'이지만
-    DB에서 프롬프트에 포함시키는 건 가능(선정 금지 규칙이 프롬프트에 있음)
-    다만 네가 원래 SQL에서 id>=3로 제한하고 싶다면 WHERE id >= 3 유지하면 됨.
-
-    여기서는 "프롬프트에 보이는 값"과 "실제 데이터" 불일치 디버깅을 위해
-    id>=2로 가져오고, 프롬프트 규칙으로 선정 금지시키는 형태로 맞춤.
-    """
-    conn = get_db_connection()
+def get_db():
+    db = SessionLocal()
     try:
-        with conn.cursor() as cursor:
-            cursor.execute(
-                "SELECT id, name, ai_learning_comment "
-                "FROM characters "
-                "WHERE id >= 3 "
-                "ORDER BY id ASC"
-            )
-            rows = cursor.fetchall()
-            print("[DEBUG] loaded character ids:", [r["id"] for r in rows][:50])
-            return rows
+        yield db
     finally:
-        conn.close()
+        db.close()
 
 
 # =========================
-# Pydantic Models
+# 기존 FOOD 테이블 매핑
 # =========================
-class StdInfo(BaseModel):
-    stdWeight: float
-    stdKcal: float
-    stdCarb: float
-    stdProtein: float
-    stdFat: float
-    stdSugar: float
-    stdNatrium: float
+class Foods(Base):
+    __tablename__ = "foods"
+
+    code = Column(String(45), primary_key=True)
+    name = Column(String(30), nullable=False)
+    standard = Column(String(10), nullable=False)
+    kcal = Column(Float, nullable=False, default=0)
+
+    # 실제 DB 컬럼 매핑
+    carb = Column("carb_g", Float, nullable=False, default=0)
+    protein = Column("protein_g", Float, nullable=False, default=0)
+    fat = Column("fat_g", Float, nullable=False, default=0)
+    sugar = Column("sugar_g", Float, nullable=False, default=0)
+    natrium = Column("natrium_g", Float, nullable=False, default=0)
 
 
-class FoodInfo(BaseModel):
+# =========================
+# 응답 모델(JSON)
+# =========================
+class FoodResponse(BaseModel):
     name: str
-    eatenWeight: float
-    eatenKcal: float
-    eatenCarb: float
-    eatenProtein: float
-    eatenFat: float
-    eatenSugar: float
-    eatenNatrium: float
-
-
-class MealInfo(BaseModel):
-    mealType: str  # BREAKFAST, LUNCH, DINNER, SNACK
-    totalKcal: float
-    totalCarb: float
-    totalProtein: float
-    totalFat: float
-    totalSugar: float
-    totalNatrium: float
-    foods: List[FoodInfo]
-
-
-class AiReportRequestModel(BaseModel):
-    stdInfo: StdInfo
-    userActivityLevelDesc: str
-    userIsDiaBetes: bool
-
-    dayTotalKcal: float
-    dayTotalCarb: float
-    dayTotalProtein: float
-    dayTotalFat: float
-    dayTotalSugar: float
-    dayTotalNatrium: float
-
-    meals: List[MealInfo]
-
-
-class AiReportResponse(BaseModel):
-    score: Optional[float]
-    comment: str
-    characterId: int
+    standard: str
+    kcal: float
+    carb: float
+    protein: float
+    fat: float
+    sugar: float
+    natrium: float
 
 
 # =========================
-# Prompt Builders
+# 유틸: 소수점 둘째자리 반올림
 # =========================
-def build_prompt(ai_request: AiReportRequestModel, characters: List[Dict[str, Any]]) -> str:
-    request_text = json.dumps(ai_request.model_dump(), ensure_ascii=False, indent=2)
+def round2(value: float) -> float:
+    return round(float(value), 2)
 
-    characters_text_lines = []
-    for ch in characters:
-        desc = ch.get("ai_learning_comment", "")
-        characters_text_lines.append(
-            f"- id: {ch['id']}\n"
-            f"  name: {ch['name']}\n"
-            f"  description: {desc}"
+
+# =========================
+# Qwen VLM 클라이언트 (Base model only)
+# =========================
+from pathlib import Path
+
+class QwenClient:
+    def __init__(self):
+        """
+        우선순위:
+        1) FOODY_VLM_MODEL_DIR 환경변수로 지정한 로컬 모델/체크포인트
+        2) 없으면 베이스 모델 (Qwen/Qwen2.5-VL-3B-Instruct)
+        """
+        base_id = "Qwen/Qwen2.5-VL-3B-Instruct"
+        local_dir = os.getenv("FOODY_VLM_MODEL_DIR", "").strip()
+
+        # 1) 로컬 경로가 주어지면 그걸 우선 사용
+        if local_dir:
+            ckpt_path = Path(local_dir)
+
+            # local_dir이 qwen25_v4 같은 상위 폴더라면: final > 최신 checkpoint 자동 선택
+            if ckpt_path.is_dir():
+                final_path = ckpt_path / "final"
+                if final_path.exists():
+                    ckpt_path = final_path
+                else:
+                    # checkpoint-* 중 가장 큰 step 선택
+                    checkpoints = sorted(
+                        ckpt_path.glob("checkpoint-*"),
+                        key=lambda p: int(p.name.split("-")[-1]) if p.name.split("-")[-1].isdigit() else -1
+                    )
+                    if checkpoints:
+                        ckpt_path = checkpoints[-1]
+
+            print(f"[INFO] Loading VLM from local checkpoint: {ckpt_path}")
+
+            # processor는 보통 체크포인트에 없을 수 있어서:
+            #  - 체크포인트에 있으면 거기서 로드
+            #  - 없으면 베이스에서 로드
+            try:
+                self.processor = AutoProcessor.from_pretrained(str(ckpt_path))
+                print("[INFO] Processor loaded from checkpoint.")
+            except Exception:
+                self.processor = AutoProcessor.from_pretrained(base_id)
+                print("[WARN] Processor not found in checkpoint. Loaded from base model.")
+
+            # 2) 체크포인트가 "풀 모델"인지 "LoRA 어댑터"인지 자동 판별
+            adapter_cfg = ckpt_path / "adapter_config.json"
+            is_lora = adapter_cfg.exists()
+
+            if is_lora:
+                print("[INFO] Detected LoRA adapter checkpoint. Loading base + adapter...")
+                from peft import PeftModel
+
+                base_model = AutoModelForVision2Seq.from_pretrained(
+                    base_id,
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+
+                self.model = PeftModel.from_pretrained(
+                    base_model,
+                    str(ckpt_path),
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+
+                # (선택) 추론 속도/호환성 위해 merge 하고 싶으면:
+                # self.model = self.model.merge_and_unload()
+                print("[INFO] LoRA adapter loaded successfully.")
+
+            else:
+                print("[INFO] Detected full-model checkpoint. Loading directly...")
+                self.model = AutoModelForVision2Seq.from_pretrained(
+                    str(ckpt_path),
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+                print("[INFO] Full model loaded successfully.")
+            
+
+        else:
+            # 3) 로컬 지정이 없으면 베이스 모델
+            print("[INFO] Loading base model only (no checkpoint path provided).")
+            self.processor = AutoProcessor.from_pretrained(base_id)
+            self.model = AutoModelForVision2Seq.from_pretrained(
+                base_id,
+                torch_dtype=torch.float16,
+                device_map="auto",
+            )
+
+        self.model.eval()
+        print("[INFO] VLM ready.")
+
+    def _is_valid_food_name(self, s: str) -> bool:
+        if not s:
+            return False
+        s = s.strip()
+
+        # 흔한 실패 토큰들
+        if s in {"-", "—", "_", "?", "없음", "모름", "알수없음", "알 수 없음", "unknown"}:
+            return False
+
+        # 한글이 1글자 이상은 있어야 음식명으로 취급
+        if not re.search(r"[가-힣]", s):
+            return False
+
+        return True
+
+    def _generate_one(self, pil_image: Image.Image, prompt: str) -> str:
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "image", "image": pil_image},
+                    {"type": "text", "text": prompt},
+                ],
+            }
+        ]
+
+        inputs = self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.model.device)
+
+        output = self.model.generate(
+            **inputs,
+            max_new_tokens=20,
+            do_sample=False,
         )
-    characters_block = "\n\n".join(characters_text_lines)
 
-    prompt = f"""
-너는 식단 관리 서비스 '푸디(Foody)'의 캐릭터 추천 AI야.
+        text = self.processor.decode(
+            output[0][inputs["input_ids"].shape[-1] :],
+            skip_special_tokens=True,
+        ).strip()
 
-너에게는 다음 정보가 주어진다:
-- [1] 오늘자 AI 분석 요청 전체 JSON (AiReportRequest)
-- [2] DB에서 가져온 푸디 캐릭터 목록 (id, name, ai_learning_comment)
+        # 공백/문장 섞여 나올 때 대비
+        text = text.split()[0].strip()
 
-너의 임무:
-1) 오늘 하루의 섭취 성향을 가장 잘 표현하는 캐릭터 1명을 선택한다.
-2) 오늘 식단에 대한 평가 점수(score)를 0~100 사이 실수로 준다.
-3) 한국어로 맞춤 추천 멘트(comment)를 작성한다.
-   - 오늘 섭취 성향 요약
-   - 좋았던 점 / 아쉬운 점
-   - 내일부터 실천할 수 있는 개선 팁 2~3가지
+        # 따옴표/괄호 등 제거
+        text = re.sub(r"[\"'()\[\]{}<>]", "", text).strip()
 
-최종 출력은 반드시 아래 JSON 형식 ONLY로 출력해야 한다:
+        return text
 
-{{
-  "characterId": <정수>,
-  "score": <실수 또는 정수>,
-  "comment": "<한국어 멘트>"
-}}
+    def _post_process_food_name(self, food_name: str) -> str:
+        """영어 음식 이름을 한국어로 변환하고 검증"""
+        translations = {
+            "omelette": "오믈렛",
+            "omelet": "오믈렛",
+            "eggroll": "계란말이",
+            "egg roll": "계란말이",
+            "koreaneggroll": "계란말이",
+            "korean egg roll": "계란말이",
+            "rolledegg": "계란말이",
+            "rolled egg": "계란말이",
+            "salad": "샐러드",
+            "rice": "밥",
+            "kimchi": "김치",
+            "kimbap": "김밥",
+            "ramen": "라면",
+        }
 
-그 외 어떤 문장도 출력하지 마라.
-특히 설명, 해설, 마크다운, 자연어 문장은 금지다.
-오직 위 JSON 한 덩어리만 출력해라.
+        lower_name = food_name.lower().strip()
 
-------------------------------------------------------------
-[1] 오늘자 AI 분석 요청 정보 (AiReportRequest JSON)
+        # 영어 단어 그대로 매칭
+        if lower_name in translations:
+            return translations[lower_name]
 
-아래 JSON은 Spring 서버에서 하루치 식단을 정리해 보낸 데이터이다.
+        # 부분 일치 처리
+        for eng, kor in translations.items():
+            if eng in lower_name:
+                return kor
 
-{request_text}
+        return food_name
 
-------------------------------------------------------------
-[2] 1일 기준 Foody 캐릭터 설명 (DB에서 불러온 단기판)
-
-캐릭터 목록:
-
-{characters_block}
-
-------------------------------------------------------------
-[3] 캐릭터 선택 규칙 (1일 기준 단기 버전)
-
-- 오늘 하루 기록만 보고 즉시 판단한다.
-- 가장 두드러진 문제/특징(칼로리 과/저체, 단백질 부족, 당류 과다, 나트륨 과다, 간식 과다 등)을 우선 반영한다.
-- 캐릭터 description을 참고해서 오늘자 수치와 가장 잘 맞는 캐릭터 1명을 고른다.
-- 2번 새싹푸디는 초기값이므로 절대 선택하면 안 된다.
-- 여러 캐릭터가 겹치는 경우 우선순위 예시는 다음과 같다:
-
-  1) 짜구리(나트륨 과다), 달다구리(당류 과다), 주전부엉(간식 위주), 왕마니(과식)
-  2) 슬리만더(저칼로리 + 고단백), 요마니(전반적으로 매우 적은 섭취)
-  3) 탄단지오(영양 균형이 좋은 하루)
-  4) 잠마니는 '아침 결식' 등 별도 조건이 있을 때만 선택
-
-------------------------------------------------------------
-[4] 점수(score) 산정 기준 (반드시 아래 수식 그대로 계산)
-
-(너가 작성한 규칙/수식이 매우 길어서 그대로 유지하려면 여기에 원문을 통째로 붙여도 되고,
- 지금처럼 이미 프롬프트에 포함하고 있었다면 그대로 복붙해도 됨.
- 단, 토큰이 길어져 응답 불안정하면 이 구간을 "핵심 규칙 요약"으로 압축하는 게 더 안정적임.)
-
-------------------------------------------------------------
-[5] 출력 형식
-
-다시 강조한다. 출력은 반드시 아래 JSON 형식 ONLY:
-
-{{
-  "characterId": <정수>,
-  "score": <실수 또는 정수>,
-  "comment": "<한국어 멘트>"
-}}
-
-그 외 어떤 텍스트, 설명, 주석, 마크다운, 백틱, 자연어 문장도 출력하지 마라.
-"""
-    return prompt.strip()
-
-
-def build_diabetes_context(ai_request: AiReportRequestModel) -> str:
-    """
-    ✅ 전역 DIABETES_RETRIEVER 사용
-    ✅ Document 리스트를 page_content로 join
-    """
-    global DIABETES_RETRIEVER
-    if DIABETES_RETRIEVER is None:
-        return ""
-
-    query_text = (
-        f"당뇨병 환자의 하루 식단 요약. "
-        f"총 칼로리 {ai_request.dayTotalKcal} kcal, "
-        f"탄수화물 {ai_request.dayTotalCarb} g, "
-        f"단백질 {ai_request.dayTotalProtein} g, "
-        f"지방 {ai_request.dayTotalFat} g, "
-        f"당류 {ai_request.dayTotalSugar} g, "
-        f"나트륨 {ai_request.dayTotalNatrium} mg. "
-        "당뇨병 환자의 식사요법, 혈당 관리, 탄수화물 조절, 나트륨 제한에 대한 진료지침."
-    )
-
-    try:
-        docs = DIABETES_RETRIEVER.get_relevant_documents(query_text)
-        if not docs:
-            return ""
-        return "\n\n".join([d.page_content for d in docs])
-    except Exception as e:
-        print(f"[WARN] 당뇨 지침 Chroma 조회 실패: {e}")
-        return ""
-
-
-def build_prompt_diabetes(
-    ai_request: AiReportRequestModel,
-    characters: List[Dict[str, Any]],
-    diabetes_context: str,
-) -> str:
-    request_text = json.dumps(ai_request.model_dump(), ensure_ascii=False, indent=2)
-
-    characters_text_lines = []
-    for ch in characters:
-        desc = ch.get("ai_learning_comment", "")
-        characters_text_lines.append(
-            f"- id: {ch['id']}\n"
-            f"  name: {ch['name']}\n"
-            f"  description: {desc}"
+    # 1) 음식 이미지를 보고 음식 명 추론
+    def predict_food_name(self, pil_image: Image.Image) -> str:
+        # ✅ 1차 프롬프트 (네가 작성한 개선본을 "문장 연결" 제대로 되도록 정리)
+        prompt1 = (
+            "너는 한국 음식 이미지 분류기다.\n"
+            "이미지에서 '가장 중심이 되는 음식 1개'의 이름만 한국어로 출력해라.\n\n"
+            "출력 규칙(매우 중요):\n"
+            "1) 한국어 음식명만 출력\n"
+            "2) 조사/문장/설명 금지 (예: '입니다', '같아요', '.' 금지)\n"
+            "3) 따옴표/괄호/슬래시/이모지 금지\n"
+            "4) 공백 없이 음식명만 출력 (최대 12자)\n\n"
+            "예시(정답 형식):\n"
+            "김밥\n"
+            "계란말이\n"
+            "떡볶이\n\n"
+            "혼동 주의 규칙:\n"
+            "- 계란말이: 달걀을 말아 네모/원통 형태, 단면이 말린 층\n"
+            "- 오믈렛: 접힌 형태, 둥글고 납작함\n\n"
+            "중요: 출력할 음식명이 없다고 판단되더라도 '-', '없음', '?'를 출력하지 말고\n"
+            "가장 유사한 한국 음식명 1개를 반드시 출력하라.\n\n"
+            "정답(음식명만):"
         )
-    characters_block = "\n\n".join(characters_text_lines)
 
-    diabetes_block = (
-        diabetes_context
-        if diabetes_context
-        else "※ 검색된 진료지침 문단이 충분하지 않습니다. 일반적인 당뇨병 식사요법 원칙을 바탕으로 답변하세요."
-    )
+        out1 = self._generate_one(pil_image, prompt1)
+        out1 = self._post_process_food_name(out1)
+        if self._is_valid_food_name(out1):
+            return out1
 
-    prompt = f"""
-너는 식단 관리 서비스 '푸디(Foody)'의 캐릭터 추천 AI이자,
-당뇨병 환자 식사요법에 익숙한 전문가야.
+        # ✅ 2차 프롬프트(재시도) - 더 강하게 "반드시 음식명"
+        prompt2 = (
+            "너는 한국 음식 이미지 분류기다.\n"
+            "모르겠어도 '-', '?', '없음'을 출력하지 마라.\n"
+            "가장 유사한 한국 음식명 1개를 반드시 출력하라.\n"
+            "음식명만 출력(설명 금지).\n"
+            "정답:"
+        )
 
-지금 사용자는 **당뇨병을 가지고 있다(userIsDiaBetes = true)**.
+        out2 = self._generate_one(pil_image, prompt2)
+        out2 = self._post_process_food_name(out2)
+        if self._is_valid_food_name(out2):
+            return out2
 
-너에게는 다음 정보가 주어진다:
-- [1] 오늘자 AI 분석 요청 전체 JSON (AiReportRequest)
-- [2] DB에서 가져온 푸디 캐릭터 목록 (id, name, ai_learning_comment)
-- [3] 당뇨병 진료지침에서 검색한 관련 문단 요약 (RAG 결과)
+        # ✅ 최후 fallback: 예전처럼 이상값 노출을 막기 위한 기본값
+        print(f"[WARN] VLM invalid outputs: out1='{out1}', out2='{out2}' -> fallback='음식'")
+        return "음식"
 
-너의 임무:
-1) 오늘 하루의 섭취 성향을 가장 잘 표현하는 캐릭터 1명을 선택한다.
-2) 오늘 식단에 대한 평가 점수(score)를 0~100 사이 실수로 준다.
-3) 한국어로 맞춤 추천 멘트(comment)를 작성한다.
-4) 약물/인슐린 용량 조절 같은 의료 행위는 지시하지 말고, 필요 시 "주치의와 상의"로 안내한다.
+    # 2) (Fallback) 순수 LLM 기반 영양 추론 (RAG 실패 시 마지막 보루)
+    def estimate_nutrition_llm(self, food_name: str) -> dict:
+        prompt = f"""
+당신은 전문 영양학자입니다.
+"{food_name}" 음식의 100g 기준 영양성분을 추정하세요.
 
-최종 출력은 반드시 아래 JSON 형식 ONLY로 출력해야 한다:
+❗ 반드시 아래 JSON 형식으로만 출력하세요.
+❗ 설명, 문장, 코드블록, 여분의 텍스트는 절대로 넣지 마세요.
+❗ 모든 수치는 number 로 출력하세요 (따옴표 금지)
 
+예시 출력:
 {{
-  "characterId": <정수>,
-  "score": <실수 또는 정수>,
-  "comment": "<한국어 멘트>"
+  "standard": "100g",
+  "kcal": 154,
+  "carb": 3.2,
+  "protein": 11.2,
+  "fat": 10.1,
+  "sugar": 1.1,
+  "natrium": 250
 }}
+        """
 
-그 외 어떤 문장도 출력하지 마라. 오직 JSON만.
+        messages = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
 
-------------------------------------------------------------
-[1] 오늘자 AI 분석 요청 정보 (AiReportRequest JSON)
+        inputs = self.processor.apply_chat_template(
+            messages,
+            add_generation_prompt=True,
+            tokenize=True,
+            return_dict=True,
+            return_tensors="pt",
+        ).to(self.model.device)
 
-{request_text}
+        output = self.model.generate(**inputs, max_new_tokens=200)
 
-------------------------------------------------------------
-[2] 캐릭터 목록
+        text = self.processor.decode(
+            output[0][inputs["input_ids"].shape[-1] :],
+            skip_special_tokens=True,
+        ).strip()
 
-{characters_block}
+        try:
+            json_block = re.search(r"\{.*\}", text, flags=re.S).group(0)
+            data = json.loads(json_block)
+        except Exception:
+            data = {
+                "standard": "100g",
+                "kcal": 0,
+                "carb": 0,
+                "protein": 0,
+                "fat": 0,
+                "sugar": 0,
+                "natrium": 0,
+            }
 
-------------------------------------------------------------
-[3] 당뇨병 진료지침 RAG 결과
+        return data
 
-{diabetes_block}
 
-------------------------------------------------------------
-[4] 출력 형식
+qwen = QwenClient()
 
-{{
-  "characterId": <정수>,
-  "score": <실수 또는 정수>,
-  "comment": "<한국어 멘트>"
-}}
-"""
-    return prompt.strip()
+# =========================
+# Chroma RAG 설정
+# =========================
+import chromadb
+from chromadb.utils import embedding_functions
+
+CHROMA_DB_DIR = os.getenv("FOODY_CHROMA_DIR", "./chroma_foods")
+chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+
+ko_embedding = embedding_functions.SentenceTransformerEmbeddingFunction(
+    model_name=os.getenv("FOODY_EMBED_MODEL", "jhgan/ko-sroberta-multitask")
+)
+
+food_collection = chroma_client.get_or_create_collection(
+    name="food_nutrition",
+    embedding_function=ko_embedding,
+)
+
+
+def build_chroma_from_db():
+    """서버 시작 시 foods 테이블 내용을 Chroma에 인덱싱 (이미 있으면 스킵)"""
+    count = food_collection.count()
+    if count > 0:
+        print(f"[INFO] Existing Chroma collection already has {count} items. Skip building.")
+        return
+
+    print("[INFO] Building Chroma index from foods table...")
+
+    db = SessionLocal()
+    try:
+        foods: List[Foods] = db.query(Foods).all()
+        total = len(foods)
+        print(f"[INFO] Loaded {total} foods from DB.")
+    finally:
+        try:
+            db.close()
+        except Exception as e:
+            print(f"[WARN] Failed to close DB session cleanly: {e}")
+
+    if total == 0:
+        print("[INFO] No foods found in DB to index.")
+        return
+
+    batch_size = 128
+    for start in range(0, total, batch_size):
+        end = min(start + batch_size, total)
+        batch = foods[start:end]
+
+        ids = []
+        docs = []
+        metas = []
+
+        for f in batch:
+            ids.append(f.code)
+            docs.append(f"{f.name} {f.standard}")
+            metas.append(
+                {
+                    "name": f.name,
+                    "standard": f.standard,
+                    "kcal": float(f.kcal),
+                    "carb": float(f.carb),
+                    "protein": float(f.protein),
+                    "fat": float(f.fat),
+                    "sugar": float(f.sugar),
+                    "natrium": float(f.natrium),
+                }
+            )
+
+        food_collection.add(ids=ids, documents=docs, metadatas=metas)
+        print(f"[INFO] Indexed {end}/{total} foods into Chroma...")
+
+    print("[INFO] Finished building Chroma index.")
+
+
+def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: float = 1.0) -> Optional[dict]:
+    """Chroma로 유사 음식 영양정보 검색 및 추정 (Top-1 선택)"""
+    result = food_collection.query(query_texts=[food_name], n_results=top_k)
+
+    metadatas = result.get("metadatas", [[]])[0]
+    distances = result.get("distances", [[]])[0]
+    documents = result.get("documents", [[]])[0]
+
+    if not metadatas:
+        print(f"[WARN] No RAG results found for '{food_name}'")
+        return None
+
+    # 상세 로깅: 검색 결과 출력
+    print(f"[DEBUG] RAG Search Results for '{food_name}':")
+    for i, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances)):
+        print(f"  [{i+1}] {doc} | distance={dist:.4f}")
+        print(f"      kcal={meta.get('kcal')}, carb={meta.get('carb')}g, "
+              f"protein={meta.get('protein')}g, fat={meta.get('fat')}g")
+
+    # 가장 유사한 결과 선택 (Top-1)
+    best_meta = metadatas[0]
+    best_distance = distances[0]
+
+    # 거리 임계값 체크
+    if best_distance > distance_threshold:
+        print(f"[WARN] Best match distance ({best_distance:.4f}) exceeds threshold ({distance_threshold})")
+        print(f"[WARN] Result may be inaccurate for '{food_name}'")
+
+    # Top-1만 사용 (평균 제거)
+    result_data = {
+        "standard": best_meta.get("standard", "100g"),
+        "kcal": float(best_meta.get("kcal", 0)),
+        "carb": float(best_meta.get("carb", 0)),
+        "protein": float(best_meta.get("protein", 0)),
+        "fat": float(best_meta.get("fat", 0)),
+        "sugar": float(best_meta.get("sugar", 0)),
+        "natrium": float(best_meta.get("natrium", 0)),
+    }
+
+    print(f"[INFO] Selected nutrition data: kcal={result_data['kcal']}, "
+          f"carb={result_data['carb']}g, protein={result_data['protein']}g, fat={result_data['fat']}g")
+
+    return result_data
 
 
 # =========================
-# Gemini Call
+# FastAPI 앱 생성
 # =========================
-def call_gemini(prompt: str) -> Dict[str, Any]:
-    if not GMS_KEY:
-        raise RuntimeError("GMS_KEY 환경 변수가 설정되지 않았습니다.")
-    if not GEMINI_URL:
-        raise RuntimeError("AI_URL(GEMINI_URL) 환경 변수가 설정되지 않았습니다.")
-
-    params = {"key": GMS_KEY}
-    headers = {"Content-Type": "application/json"}
-
-    body = {"contents": [{"parts": [{"text": prompt}]}]}
-
-    # ✅ 디버깅 로그: 프롬프트가 실제로 얼마나 들어갔는지 확인
-    print("[DEBUG] prompt length:", len(prompt))
-    print("[DEBUG] prompt head(300):\n", prompt[:300])
-    print("[DEBUG] prompt tail(300):\n", prompt[-300:])
-
-    response = requests.post(
-        GEMINI_URL,
-        params=params,
-        headers=headers,
-        json=body,  # ✅ data= 대신 json=
-        timeout=30,
-    )
-
-    if response.status_code != 200:
-        raise RuntimeError(f"Gemini API 호출 실패: {response.status_code} {response.text}")
-
-    data = response.json()
-
-    try:
-        text = data["candidates"][0]["content"]["parts"][0]["text"]
-    except (KeyError, IndexError):
-        raise RuntimeError(f"예상하지 못한 Gemini 응답 형식: {data}")
-
-    print("=== RAW GEMINI OUTPUT ===")
-    print(text)
-    print("=== END RAW GEMINI OUTPUT ===")
-
-    cleaned = text.strip()
-
-    # ✅ fence 제거를 더 안전하게
-    if cleaned.startswith("```"):
-        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned, flags=re.I).strip()
-        cleaned = re.sub(r"\s*```$", "", cleaned).strip()
-
-    start = cleaned.find("{")
-    end = cleaned.rfind("}")
-    if start == -1 or end == -1:
-        raise RuntimeError(f"JSON 본문을 찾지 못했습니다. cleaned={cleaned!r}")
-
-    json_str = cleaned[start : end + 1]
-
-    print("=== PARSED JSON STRING ===")
-    print(json_str)
-    print("=== END PARSED JSON STRING ===")
-
-    try:
-        result = json.loads(json_str)
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"JSON 파싱 실패: {e}; json_str={json_str!r}")
-
-    return result
-
-# FastAPI App
-app = FastAPI(title="Foody Character Recommender API")
+app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
 
 
 @app.on_event("startup")
 def on_startup():
-    """
-    ✅ 서버 시작 시 캐릭터 캐시 + 당뇨 RAG retriever 전역 세팅
-    """
-    global CHARACTERS_CACHE, DIABETES_RETRIEVER
+    build_chroma_from_db()
 
-    # 캐릭터 캐시
+
+@app.post("/api/vlm/food", response_model=FoodResponse)
+async def predict_food(
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    # 1) 이미지 체크
+    if not image.content_type or not image.content_type.startswith("image/"):
+        raise HTTPException(400, "이미지 파일만 업로드 가능합니다.")
+
+    # 2) 이미지 로드
     try:
-        CHARACTERS_CACHE = load_characters_from_db()
-        if not CHARACTERS_CACHE:
-            print("[WARN] characters 테이블에서 가져온 데이터가 없습니다.")
+        content = await image.read()
+        pil_image = Image.open(io.BytesIO(content)).convert("RGB")
+    except Exception:
+        raise HTTPException(400, "이미지를 열 수 없습니다.")
+
+    # 3) 음식 이름 추론 (VLM)
+    print(f"\n{'='*80}")
+    food_name = qwen.predict_food_name(pil_image)
+    normalized_name = food_name.replace(" ", "")
+    print(f"[INFO] 🔍 VLM Prediction: '{food_name}' (normalized: '{normalized_name}')")
+
+    # 4) RDB exact match (공백 제거 비교)
+    food = (
+        db.query(Foods)
+        .filter(func.replace(Foods.name, " ", "") == normalized_name)
+        .first()
+    )
+
+    # 5) 영양 성분 결정 로직
+    if food:
+        # ✅ DB에 정확히 일치하는 음식이 있으면 DB 데이터 사용
+        print(f"[INFO] ✅ Found exact match in DB: '{food.name}' (code: {food.code})")
+        print(f"[INFO] 💾 Using DB nutrition data directly (skipping RAG)")
+        
+        response_name = food.name
+        est = {
+            "standard": food.standard,
+            "kcal": float(food.kcal),
+            "carb": float(food.carb),
+            "protein": float(food.protein),
+            "fat": float(food.fat),
+            "sugar": float(food.sugar),
+            "natrium": float(food.natrium),
+        }
+    else:
+        # DB에 없으면 RAG로 유사 음식 검색
+        print(f"[INFO] No exact match in DB for '{normalized_name}'")
+        print(f"[INFO] Starting RAG search for '{food_name}'...")
+        
+        response_name = food_name
+        est = rag_estimate_nutrition(food_name)
+        
+        if est:
+            print(f"[INFO] RAG search successful")
         else:
-            print(f"[INFO] {len(CHARACTERS_CACHE)}개의 캐릭터 정보를 로드했습니다.")
-    except Exception as e:
-        print(f"[ERROR] characters 로딩 실패: {e}")
-        CHARACTERS_CACHE = []
+            # RAG도 실패하면 LLM으로 추정
+            print(f"[INFO] RAG failed, using LLM estimation for '{food_name}'")
+            est = qwen.estimate_nutrition_llm(food_name)
 
-    # 당뇨 지침 Chroma (LangChain)
-    try:
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    # 최종 결과 로깅
+    print(f"[INFO] 📊 Final Response:")
+    print(f"       name='{response_name}', standard='{est.get('standard')}'")
+    print(f"       kcal={round2(est.get('kcal', 0))}, carb={round2(est.get('carb', 0))}g")
+    print(f"       protein={round2(est.get('protein', 0))}g, fat={round2(est.get('fat', 0))}g")
+    print(f"       sugar={round2(est.get('sugar', 0))}g, natrium={round2(est.get('natrium', 0))}mg")
+    print(f"{'='*80}\n")
 
-        vectordb = Chroma(
-            persist_directory=DIABETES_DB_DIR,
-            collection_name=DIABETES_COLLECTION_NAME,
-            embedding_function=embeddings,
-        )
-
-        DIABETES_RETRIEVER = vectordb.as_retriever(search_kwargs={"k": 4})
-        print("[INFO] Diabetes guideline retriever 로드 완료.")
-    except Exception as e:
-        print(f"[WARN] Diabetes guideline Chroma 로드 실패: {e}")
-        DIABETES_RETRIEVER = None
-
-
-@app.post("/api/analysis/report", response_model=AiReportResponse)
-def analyze_meal(ai_request: AiReportRequestModel):
-    print(f"[INFO] userIsDiaBetes = {ai_request.userIsDiaBetes}")
-
-    # 캐릭터 로딩 fallback
-    if not CHARACTERS_CACHE:
-        try:
-            characters = load_characters_from_db()
-            print("[INFO] 캐릭터 정보를 DB에서 즉시 로드합니다.")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"characters 정보를 불러오지 못했습니다: {e}")
-    else:
-        characters = CHARACTERS_CACHE
-        print("[INFO] 캐릭터 정보를 캐시에서 사용합니다.")
-
-    # 프롬프트 분기
-    if ai_request.userIsDiaBetes:
-        print("[INFO] 당뇨병 환자용 AI 분석 요청입니다. (RAG 사용)")
-        diabetes_context = build_diabetes_context(ai_request)
-        prompt = build_prompt_diabetes(ai_request, characters, diabetes_context)
-    else:
-        print("[INFO] 일반 사용자용 AI 분석 요청입니다. (기존 프롬프트)")
-        prompt = build_prompt(ai_request, characters)
-
-    # Gemini 호출
-    try:
-        gemini_result = call_gemini(prompt)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    # 키 이름 통일
-    character_id = gemini_result.get("characterId", gemini_result.get("character_id"))
-    score = gemini_result.get("score")
-    comment = gemini_result.get("comment")
-
-    if character_id is None or comment is None:
-        raise HTTPException(status_code=500, detail=f"Gemini 응답에 필요한 필드가 없습니다: {gemini_result}")
-
-    try:
-        character_id = int(character_id)
-    except (TypeError, ValueError):
-        raise HTTPException(status_code=500, detail=f"characterId가 정수가 아닙니다: {character_id!r}")
-
-    if score is not None:
-        try:
-            score = float(score)
-        except (TypeError, ValueError):
-            score = None
-
-    return AiReportResponse(characterId=character_id, score=score, comment=str(comment))
-
+    return FoodResponse(
+        name=response_name,
+        standard=est.get("standard", "100"),
+        kcal=round2(est.get("kcal", 0)),
+        carb=round2(est.get("carb", 0)),
+        protein=round2(est.get("protein", 0)),
+        fat=round2(est.get("fat", 0)),
+        sugar=round2(est.get("sugar", 0)),
+        natrium=round2(est.get("natrium", 0)),
+    )
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app:app", host="0.0.0.0", port=7000, reload=True)
+
+    uvicorn.run(
+        "app:app",
+        host="0.0.0.0", 
+        port=8000,    
+        reload=False      
+    )
+

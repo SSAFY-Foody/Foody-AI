@@ -2,6 +2,7 @@
 """
 Test script to compare accuracy between base Qwen2.5-VL and fine-tuned model
 Uses test.csv for evaluation
+python test.py --finetuned_path ../trained_models/qwen25_v5 --test_cxv ./test.csv --output_dir ../test_results/v5
 """
 
 import os
@@ -24,7 +25,7 @@ from peft import PeftModel
 
 # ==================== Configuration ====================
 BASE_MODEL_NAME = "Qwen/Qwen2.5-VL-3B-Instruct"
-TEST_CSV = "test_v2.csv"
+TEST_CSV = "test.csv"
 
 # Improved prompt from app_v4.py - ensures concise food name output
 PROMPT = (

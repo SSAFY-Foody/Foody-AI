@@ -2,6 +2,7 @@
 """
 기존에 있던 LoRA 어댑터 모델을 불러와서 한국 음식 이미지 분류기 태스크로 추가 학습코드.
 LoRA 어댑터만 불러와서 학습을 진행하므로, optimizer/scheduler 상태는 초기화됨.
+python ./continuedModel_train.py --load_dir ./trained_models/qwen25_v4 --output_dir ./trained_models/qwen25_v5 --train_csv ./train_csvs/train_3.csv
 """
 
 import os
@@ -36,9 +37,9 @@ logger = logging.getLogger("qwen25-train-v5")
 @dataclass
 class TrainCfg:
     base_model: str = "Qwen/Qwen2.5-VL-3B-Instruct"
-    load_dir: str = "./qwen25_v6"
-    output_dir: str = "./qwen25_v7"
-    train_csv: str = "train_3.csv"
+    load_dir: str = "./trained_models/qwen25_v5"
+    output_dir: str = "./trained_models/qwen25_v6"
+    train_csv: str = "./train_csvs/train_3.csv"
 
     train_image_size: Tuple[int, int] = (224, 224)
     max_length: int = 1536  # 긴 프롬프트 대응
@@ -52,7 +53,7 @@ class TrainCfg:
     )
 
     # Training
-    num_train_epochs: float = 8.0
+    num_train_epochs: float = 9.0
     per_device_train_batch_size: int = 1
     gradient_accumulation_steps: int = 8
     learning_rate: float = 5e-5

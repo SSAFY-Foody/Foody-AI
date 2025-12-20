@@ -1,0 +1,6 @@
+{
+  "base_accuracy": null,
+  "finetuned_accuracy": 59.333333333333336,
+  "improvement": null,
+  "test_samples": 150
+}
