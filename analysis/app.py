@@ -2,6 +2,7 @@ import os
 import json
 from typing import Optional, List, Dict, Any
 from dotenv import load_dotenv
+from datetime import datetime
 
 import requests
 import pymysql
@@ -9,8 +10,16 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+# LangChain 최신 버전 호환을 위한 import
+try:
+    from langchain_chroma import Chroma
+except ImportError:
+    from langchain_community.vectorstores import Chroma
+
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
 
 
 DIABETES_DB_DIR = "./chroma_diabetes_guideline"
@@ -30,6 +39,32 @@ DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
 DB_NAME = os.getenv("DB_NAME")
+
+# 로그 디렉토리 생성
+LOG_DIR = "./logs"
+os.makedirs(LOG_DIR, exist_ok=True)
+
+
+def save_log_to_json(log_data: Dict[str, Any]) -> str:
+    """
+    로그 데이터를 JSON 파일로 저장합니다.
+    파일명: logs/log_YYYYMMDD_HHMMSS_microseconds.json
+    
+    Returns:
+        저장된 파일 경로
+    """
+    timestamp = datetime.now()
+    filename = timestamp.strftime("log_%Y%m%d_%H%M%S_%f.json")
+    filepath = os.path.join(LOG_DIR, filename)
+    
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(log_data, f, ensure_ascii=False, indent=2)
+        print(f"[LOG] 로그 저장 완료: {filepath}")
+        return filepath
+    except Exception as e:
+        print(f"[ERROR] 로그 저장 실패: {e}")
+        return ""
 
 
 def get_db_connection():
@@ -225,7 +260,7 @@ description에는 예를 들어
   1) 짜구리(나트륨 과다), 달다구리(당류 과다), 주전부엉(간식 위주), 왕마니(과식)
   2) 슬리만더(저칼로리 + 고단백), 요마니(전반적으로 매우 적은 섭취)
   3) 탄단지오(영양 균형이 좋은 하루)
-  4) 잠마니는 '아침 결식' 등 별도 조건이 있을 때만 선택
+  4) 잠마니는 '아침 결식' 즉 아침에 먹은 값이 없을 경우 산정해준다. 아침에 먹은 값이 있으면 잠마니를 선택하지 않는다.
 
 ------------------------------------------------------------
 [4] 점수(score) 산정 기준 (반드시 아래 수식 그대로 계산)
@@ -278,6 +313,38 @@ description에는 예를 들어
 - 각 영양소 점수는 0~100으로 clamp 한다.
 - 소수점은 1자리 반올림 (예: 83.4)
 
+[절대 규칙 - 반드시 지켜라]
+1) 결식(끼니를 걸렀음)이 1회라도 있으면, 최종 점수는 60점을 절대 초과할 수 없다. (CAP=60)
+2) 결식이 2회 이상이면, 최종 점수는 40점을 절대 초과할 수 없다. (CAP=40)
+3) 점수는 아래 항목 점수의 합(가감점)으로만 계산한다. 직감/칭찬/추측으로 점수를 올리지 마라.
+4) 정보가 부족하면 보수적으로(낮게) 평가한다. (모르면 0점 처리 또는 최소 점수)
+5) 출력은 JSON만. 설명 문장 금지.
+
+[입력]
+- meals: 아침/점심/저녁/간식 등의 섭취 목록
+
+[평가 방법: base 50점에서 시작]
+A. 결식 페널티 (가장 우선)
+- 결식 1회: -25
+- 결식 2회: -40
+- 결식 3회: -60
+(결식 횟수는 meals 중 비어있는 끼니 또는 isWaited=true이면 최소 1회로 판단)
+
+B. 균형 점수(0~30)
+- 탄/단/지 중 단백질이 포함된 끼니 수: 끼니당 +5 (최대 15)
+- 채소/과일/식이섬유 추정 가능: 끼니당 +5 (최대 10)
+- 과도한 당류/가공식품/음료만 섭취: 끼니당 -5 (최대 -10)
+
+C. 과식/과다열량 패널티(0~-20)
+- 고칼로리/튀김/패스트푸드로 추정되는 끼니: -7 (최대 -14)
+- 야식/늦은 시간 폭식으로 추정: -6
+
+D. 데이터 신뢰도(0~-10)
+- 음식명이 불명확/추정치가 많음: -5
+- 끼니 정보가 빈약함: -5
+
+
+
 5) 퍼센티지 표시에 대한 내부 계산(멘트에 참고 가능)
 - 퍼센티지 = (하루 총 섭취량 / 하루 권장량) × 100
 - 이 퍼센티지는 멘트에서 "권장량 대비 몇 %" 같은 표현을 만들 때 참고해도 된다.
@@ -309,8 +376,14 @@ def build_diabetes_context(ai_request: AiReportRequestModel) -> str:
     당뇨병 환자의 하루 섭취 요약으로 Chroma에 질의해서
     지침 관련 문단 몇 개를 가져온다.
     """
-    global DIABETES_COLLECTION
-    if DIABETES_COLLECTION is None:
+    global DIABETES_RETRIEVER
+    
+    print("\n" + "="*60)
+    print("[RAG] 당뇨병 지침 RAG 시작")
+    print("="*60)
+    
+    if DIABETES_RETRIEVER is None:
+        print("[RAG ERROR] DIABETES_RETRIEVER가 None입니다. RAG를 사용할 수 없습니다.")
         return ""
 
     query_text = (
@@ -323,17 +396,42 @@ def build_diabetes_context(ai_request: AiReportRequestModel) -> str:
         f"나트륨 {ai_request.dayTotalNatrium} mg. "
         "당뇨병 환자의 식사요법, 혈당 관리, 탄수화물 조절, 나트륨 제한에 대한 진료지침."
     )
+    
+    print(f"[RAG] 쿼리 텍스트:\n{query_text}\n")
 
     try:
         # 랭쳋인 방식 : Document 형태로 반환됨
-        docs = DIABETES_RETRIEVER.get_relevant_documents(query_text)
+        print("[RAG] Chroma에서 관련 문서 검색 중...")
+        # invoke 메서드 사용 (get_relevant_documents는 deprecated)
+        docs = DIABETES_RETRIEVER.invoke(query_text)
+        
+        print(f"[RAG] 검색된 문서 개수: {len(docs)}")
+        
         if not docs:
+            print("[RAG WARNING] 검색된 문서가 없습니다.")
             return ""
+        
+        # 각 문서 내용 로그 출력
+        for i, doc in enumerate(docs, 1):
+            print(f"\n[RAG] 문서 {i}:")
+            print(f"  - 길이: {len(doc.page_content)} 글자")
+            print(f"  - 내용 미리보기: {doc.page_content[:200]}...")
+            if hasattr(doc, 'metadata') and doc.metadata:
+                print(f"  - 메타데이터: {doc.metadata}")
+        
         # 각 document의 page_content만 꺼내서 하나의 문맥 블록으로 합치는 작업
         context = "\n\n".join([doc.page_content for doc in docs])
+        
+        print(f"\n[RAG] 최종 컨텍스트 길이: {len(context)} 글자")
+        print("="*60)
+        print("[RAG] 당뇨병 지침 RAG 완료")
+        print("="*60 + "\n")
+        
         return context
     except Exception as e:
-        print(f"[WARN] 당뇨 지침 Chroma 조회 실패: {e}")
+        print(f"[RAG ERROR] 당뇨 지침 Chroma 조회 실패: {e}")
+        import traceback
+        traceback.print_exc()
         return ""
 
 
@@ -438,7 +536,13 @@ def build_prompt_diabetes(ai_request: AiReportRequestModel,
 
 # Gemini 호출
 
-def call_gemini(prompt: str) -> Dict[str, Any]:
+def call_gemini(prompt: str) -> tuple[Dict[str, Any], str]:
+    """
+    Gemini API를 호출하고 결과를 반환합니다.
+    
+    Returns:
+        tuple: (파싱된 JSON dict, 원본 응답 텍스트)
+    """
     if not GMS_KEY:
         raise RuntimeError("GMS_KEY 환경 변수가 설정되지 않았습니다.")
 
@@ -460,7 +564,7 @@ def call_gemini(prompt: str) -> Dict[str, Any]:
         params=params,
         headers=headers,
         data=json.dumps(body, ensure_ascii=False),
-        timeout=30,
+        timeout=90,
     )
 
     if response.status_code != 200:
@@ -479,6 +583,9 @@ def call_gemini(prompt: str) -> Dict[str, Any]:
     print("=== RAW GEMINI OUTPUT ===")
     print(text)
     print("=== END RAW GEMINI OUTPUT ===")
+    
+    # 원본 텍스트 보관 (로깅용)
+    raw_text = text
 
     cleaned = text.strip()
 
@@ -505,7 +612,7 @@ def call_gemini(prompt: str) -> Dict[str, Any]:
     except json.JSONDecodeError as e:
         raise RuntimeError(f"JSON 파싱 실패: {e}; json_str={json_str!r}")
 
-    return result
+    return result, raw_text
 
 
 # FastAPI
@@ -535,21 +642,47 @@ def on_startup():
 
     # 당뇨 지침 Chroma (LangChain)
     try:
+        print("\n" + "="*60)
+        print("[STARTUP] 당뇨병 진료지침 RAG 초기화 시작")
+        print("="*60)
+        print(f"[STARTUP] ChromaDB 경로: {DIABETES_DB_DIR}")
+        print(f"[STARTUP] Collection 이름: {DIABETES_COLLECTION_NAME}")
+        
+        # 디렉토리 존재 확인
+        if not os.path.exists(DIABETES_DB_DIR):
+            print(f"[STARTUP ERROR] ChromaDB 디렉토리가 존재하지 않습니다: {DIABETES_DB_DIR}")
+            DIABETES_RETRIEVER = None
+            return
+        
+        print("[STARTUP] 임베딩 모델 로딩 중...")
         # 인덱싱할 때 썼던 임베딩 모델 이름이랑 맞춰야 함!
         embeddings = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
+        print("[STARTUP] 임베딩 모델 로딩 완료")
 
+        print("[STARTUP] ChromaDB 연결 중...")
         vectordb = Chroma(
             persist_directory=DIABETES_DB_DIR,
             collection_name=DIABETES_COLLECTION_NAME,
             embedding_function=embeddings,
         )
-
+        print("[STARTUP] ChromaDB 연결 완료")
+        
+        print("[STARTUP] Retriever 생성 중 (k=4)...")
         DIABETES_RETRIEVER = vectordb.as_retriever(search_kwargs={"k": 4})
-        print("[INFO] Diabetes guideline retriever 로드 완료.")
+        
+        # 테스트 쿼리 실행
+        print("[STARTUP] 테스트 쿼리 실행 중...")
+        test_docs = DIABETES_RETRIEVER.invoke("당뇨병 식사요법")
+        print(f"[STARTUP] 테스트 쿼리 결과: {len(test_docs)}개 문서 검색됨")
+        
+        print("[STARTUP] ✅ Diabetes guideline retriever 로드 완료.")
+        print("="*60 + "\n")
     except Exception as e:
-        print(f"[WARN] Diabetes guideline Chroma 로드 실패: {e}")
+        print(f"[STARTUP ERROR] ❌ Diabetes guideline Chroma 로드 실패: {e}")
+        import traceback
+        traceback.print_exc()
         DIABETES_RETRIEVER = None
 
 
@@ -557,68 +690,115 @@ def on_startup():
 # Spring AiReportService.analyzeMeal() 이 호출할 엔드포인트
 @app.post("/api/analysis/report", response_model=AiReportResponse)
 def analyze_meal(ai_request: AiReportRequestModel):
+    # 로그 데이터 초기화
+    log_data = {
+        "timestamp": datetime.now().isoformat(),
+        "request": ai_request.model_dump(),
+        "is_diabetes": ai_request.userIsDiaBetes,
+        "characters": [],
+        "diabetes_context": None,
+        "final_prompt": None,
+        "gemini_raw_response": None,
+        "gemini_parsed_response": None,
+        "final_response": None,
+        "error": None
+    }
+    
     # 요청 바디에 들어온 실제 값 확인
     print(f"[INFO] userIsDiaBetes = {ai_request.userIsDiaBetes}")
 
-    if not CHARACTERS_CACHE:
+    try:
+        if not CHARACTERS_CACHE:
+            try:
+                characters = load_characters_from_db()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"characters 정보를 불러오지 못했습니다: {e}",
+                )
+        else:
+            characters = CHARACTERS_CACHE
+            print("[INFO] 캐릭터 정보를 캐시에서 사용합니다.")
+        
+        # 로그에 캐릭터 정보 저장
+        log_data["characters"] = characters
+
+        # 당뇨 여부에 따라 프롬프트 분기
+        if ai_request.userIsDiaBetes:
+            print("[INFO] 당뇨병 환자용 AI 분석 요청입니다. (RAG 사용)")
+            diabetes_context = build_diabetes_context(ai_request)
+            log_data["diabetes_context"] = diabetes_context
+            prompt = build_prompt_diabetes(ai_request, characters, diabetes_context)
+        else:
+            print("[INFO] 일반 사용자용 AI 분석 요청입니다. (기존 프롬프트)")
+            prompt = build_prompt(ai_request, characters)
+        
+        # 로그에 최종 프롬프트 저장
+        log_data["final_prompt"] = prompt
+
+        # Gemini 호출
         try:
-            characters = load_characters_from_db()
+            gemini_result, raw_response = call_gemini(prompt)
+            log_data["gemini_raw_response"] = raw_response
+            log_data["gemini_parsed_response"] = gemini_result
         except Exception as e:
+            log_data["error"] = f"Gemini API 호출 실패: {str(e)}"
+            save_log_to_json(log_data)
+            raise HTTPException(status_code=500, detail=str(e))
+
+        # 키 이름 통일 (characterId / character_id 둘 다 허용)
+        character_id = gemini_result.get("characterId", gemini_result.get("character_id"))
+        score = gemini_result.get("score")
+        comment = gemini_result.get("comment")
+
+        if character_id is None or comment is None:
+            log_data["error"] = f"Gemini 응답에 필요한 필드가 없습니다: {gemini_result}"
+            save_log_to_json(log_data)
             raise HTTPException(
                 status_code=500,
-                detail=f"characters 정보를 불러오지 못했습니다: {e}",
+                detail=f"Gemini 응답에 필요한 필드가 없습니다: {gemini_result}",
             )
-    else:
-        characters = CHARACTERS_CACHE
-        print("[INFO] 캐릭터 정보를 캐시에서 사용합니다.")
 
-    # 당뇨 여부에 따라 프롬프트 분기
-    if ai_request.userIsDiaBetes:
-        print("[INFO] 당뇨병 환자용 AI 분석 요청입니다. (RAG 사용)")
-        diabetes_context = build_diabetes_context(ai_request)
-        prompt = build_prompt_diabetes(ai_request, characters, diabetes_context)
-    else:
-        print("[INFO] 일반 사용자용 AI 분석 요청입니다. (기존 프롬프트)")
-        prompt = build_prompt(ai_request, characters)
-
-    # Gemini 호출
-    try:
-        gemini_result = call_gemini(prompt)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-    # 키 이름 통일 (characterId / character_id 둘 다 허용)
-    character_id = gemini_result.get("characterId", gemini_result.get("character_id"))
-    score = gemini_result.get("score")
-    comment = gemini_result.get("comment")
-
-    if character_id is None or comment is None:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Gemini 응답에 필요한 필드가 없습니다: {gemini_result}",
-        )
-
-    try:
-        character_id = int(character_id)
-    except (TypeError, ValueError):
-        raise HTTPException(
-            status_code=500,
-            detail=f"characterId가 정수가 아닙니다: {character_id!r}",
-        )
-
-    # score는 없으면 None 허용, 숫자로 캐스팅 시도
-    if score is not None:
         try:
-            score = float(score)
+            character_id = int(character_id)
         except (TypeError, ValueError):
-            score = None
+            log_data["error"] = f"characterId가 정수가 아닙니다: {character_id!r}"
+            save_log_to_json(log_data)
+            raise HTTPException(
+                status_code=500,
+                detail=f"characterId가 정수가 아닙니다: {character_id!r}",
+            )
 
-    # FastAPI → Spring JSON
-    return AiReportResponse(
-        characterId=character_id,
-        score=score,
-        comment=str(comment),
-    )
+        # score는 없으면 None 허용, 숫자로 캐스팅 시도
+        if score is not None:
+            try:
+                score = float(score)
+            except (TypeError, ValueError):
+                score = None
+
+        # FastAPI → Spring JSON
+        response = AiReportResponse(
+            characterId=character_id,
+            score=score,
+            comment=str(comment),
+        )
+        
+        # 로그에 최종 응답 저장
+        log_data["final_response"] = response.model_dump()
+        
+        # 로그 저장
+        save_log_to_json(log_data)
+        
+        return response
+        
+    except HTTPException:
+        # HTTPException은 그대로 raise
+        raise
+    except Exception as e:
+        # 예상치 못한 에러는 로그에 기록하고 500 에러 반환
+        log_data["error"] = f"예상치 못한 에러: {str(e)}"
+        save_log_to_json(log_data)
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 if __name__ == "__main__":
