@@ -1,1073 +1,1073 @@
 {
   "model_name": "Fine-tuned Model",
-  "accuracy": 55.333333333333336,
-  "correct": 83,
+  "accuracy": 61.33333333333333,
+  "correct": 92,
   "total": 150,
   "results": [
     {
-      "image_path": "dataset/kfood/나물/나물/가지볶음/Img_040_0940.jpg",
+      "image_path": "testdataset/가지볶음/Img_040_0940.jpg",
       "true_label": "가지볶음",
       "predicted": "가지볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/장/장/간장게장/Img_093_0090.jpg",
+      "image_path": "testdataset/간장게장/Img_093_0090.jpg",
       "true_label": "간장게장",
-      "predicted": "조개구이",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "간장게장",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/갈비구이/Img_000_0229.jpg",
+      "image_path": "testdataset/갈비구이/Img_000_0229.jpg",
       "true_label": "갈비구이",
-      "predicted": "물회",
+      "predicted": "보쌈",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찜/찜/갈비찜/Img_124_0657.jpg",
+      "image_path": "testdataset/갈비찜/Img_124_0657.jpg",
       "true_label": "갈비찜",
-      "predicted": "젓갈",
+      "predicted": "양념게장",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/탕/탕/갈비탕/Img_134_0119.jpg",
+      "image_path": "testdataset/갈비탕/Img_134_0119.jpg",
       "true_label": "갈비탕",
       "predicted": "",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/갈치구이/Img_001_0104.jpg",
+      "image_path": "testdataset/갈치구이/Img_001_0104.jpg",
       "true_label": "갈치구이",
       "predicted": "갈치구이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/갈치조림/Img_106_0036.jpg",
+      "image_path": "testdataset/갈치조림/Img_106_0036.jpg",
       "true_label": "갈치조림",
       "predicted": "주꾸미볶음",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/감자전/Img_097_0593.jpg",
+      "image_path": "testdataset/감자전/Img_097_0593.jpg",
       "true_label": "감자전",
       "predicted": "김치전",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/조림/조림/감자조림/Img_107_0131.jpg",
+      "image_path": "testdataset/감자조림/Img_107_0131.jpg",
       "true_label": "감자조림",
-      "predicted": "약식",
-      "correct_exact": false,
-      "correct_contains": false
-    },
-    {
-      "image_path": "dataset/kfood/볶음/볶음/감자채볶음/Img_078_0491.jpg",
-      "true_label": "감자채볶음",
-      "predicted": "무생채",
-      "correct_exact": false,
-      "correct_contains": false
-    },
-    {
-      "image_path": "dataset/kfood/탕/탕/감자탕/Img_135_0922.jpg",
-      "true_label": "감자탕",
-      "predicted": "감자탕",
+      "predicted": "감자조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/갓김치/Img_029_0709.jpg",
-      "true_label": "갓김치",
-      "predicted": "파김치",
+      "image_path": "testdataset/감자채볶음/Img_078_0491.jpg",
+      "true_label": "감자채볶음",
+      "predicted": "감자채",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/건새우볶음/Img_079_0847.jpg",
+      "image_path": "testdataset/감자탕/Img_135_0922.jpg",
+      "true_label": "감자탕",
+      "predicted": "순두부찌개",
+      "correct_exact": false,
+      "correct_contains": false
+    },
+    {
+      "image_path": "testdataset/갓김치/Img_029_0709.jpg",
+      "true_label": "갓김치",
+      "predicted": "갓김치",
+      "correct_exact": true,
+      "correct_contains": true
+    },
+    {
+      "image_path": "testdataset/건새우볶음/Img_079_0847.jpg",
       "true_label": "건새우볶음",
       "predicted": "건새우볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/떡/떡/경단/Img_046_0490.jpg",
+      "image_path": "testdataset/경단/Img_046_0490.jpg",
       "true_label": "경단",
       "predicted": "경단",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/국/국/계란국/Img_014_0877.jpg",
+      "image_path": "testdataset/계란국/Img_014_0877.jpg",
       "true_label": "계란국",
       "predicted": "계란국",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/계란말이/Img_098_0941.jpg",
+      "image_path": "testdataset/계란말이/Img_098_0941.jpg",
       "true_label": "계란말이",
       "predicted": "계란말이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/찜/찜/계란찜/Img_125_0422.jpg",
+      "image_path": "testdataset/계란찜/Img_125_0422.jpg",
       "true_label": "계란찜",
       "predicted": "계란찜",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/계란후라이/Img_099_0238.jpg",
+      "image_path": "testdataset/계란후라이/Img_099_0238.jpg",
       "true_label": "계란후라이",
       "predicted": "계란후라이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/고등어구이/Img_002_0210.jpg",
+      "image_path": "testdataset/고등어구이/Img_002_0210.jpg",
       "true_label": "고등어구이",
       "predicted": "고등어구이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/고등어조림/Img_108_0783.jpg",
+      "image_path": "testdataset/고등어조림/Img_108_0783.jpg",
       "true_label": "고등어조림",
       "predicted": "고등어조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/나물/나물/고사리나물/Img_041_0449.jpg",
+      "image_path": "testdataset/고사리나물/Img_041_0449.jpg",
       "true_label": "고사리나물",
       "predicted": "고사리나물",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/고추장진미채볶음/Img_080_0723.jpg",
+      "image_path": "testdataset/고추장진미채볶음/Img_080_0723.jpg",
       "true_label": "고추장진미채볶음",
       "predicted": "오징어채볶음",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/튀김/튀김/고추튀김/Img_140_0121.jpg",
+      "image_path": "testdataset/고추튀김/Img_140_0121.jpg",
       "true_label": "고추튀김",
       "predicted": "고추튀김",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/탕/탕/곰탕_설렁탕/Img_136_0351.jpg",
+      "image_path": "testdataset/곰탕_설렁탕/Img_136_0351.jpg",
       "true_label": "곰탕_설렁탕",
       "predicted": "물냉면",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/곱창구이/Img_003_0600.jpg",
+      "image_path": "testdataset/곱창구이/Img_003_0600.jpg",
       "true_label": "곱창구이",
       "predicted": "곱창전골",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/전골/전골/곱창전골/Img_105_0266.jpg",
+      "image_path": "testdataset/곱창전골/Img_105_0266.jpg",
       "true_label": "곱창전골",
       "predicted": "순두부찌개",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/기타/기타/과메기/Img_022_0351.jpg",
+      "image_path": "testdataset/과메기/Img_022_0351.jpg",
       "true_label": "과메기",
       "predicted": "과메기",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/김밥/Img_069_0445.jpg",
+      "image_path": "testdataset/김밥/Img_069_0445.jpg",
       "true_label": "김밥",
       "predicted": "김밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/김치볶음밥/Img_070_0459.jpg",
+      "image_path": "testdataset/김치볶음밥/Img_070_0459.jpg",
       "true_label": "김치볶음밥",
       "predicted": "계란후라이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/전/전/김치전/Img_100_0529.jpg",
+      "image_path": "testdataset/김치전/Img_100_0529.jpg",
       "true_label": "김치전",
       "predicted": "파전",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찌개/찌개/김치찌개/Img_119_0409.jpg",
+      "image_path": "testdataset/김치찌개/Img_119_0409.jpg",
       "true_label": "김치찌개",
       "predicted": "육개장",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찜/찜/김치찜/Img_126_0273.jpg",
+      "image_path": "testdataset/김치찜/Img_126_0273.jpg",
       "true_label": "김치찜",
-      "predicted": "순두부찌개",
+      "predicted": "곱창전골",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/김치/김치/깍두기/Img_030_0034.JPG",
+      "image_path": "testdataset/깍두기/Img_030_0034.JPG",
       "true_label": "깍두기",
       "predicted": "도라지무침",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/장아찌/장아찌/깻잎장아찌/Img_095_0664.jpg",
+      "image_path": "testdataset/깻잎장아찌/Img_095_0664.jpg",
       "true_label": "깻잎장아찌",
-      "predicted": "송편",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "깻잎장아찌",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/찜/찜/꼬막찜/Img_127_0812.jpg",
+      "image_path": "testdataset/꼬막찜/Img_127_0812.jpg",
       "true_label": "꼬막찜",
       "predicted": "꼬막찜",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/꽁치조림/Img_109_0683.jpg",
+      "image_path": "testdataset/꽁치조림/Img_109_0683.jpg",
       "true_label": "꽁치조림",
       "predicted": "꽁치조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/무침/무침/꽈리고추무침/Img_062_0006.jpg",
+      "image_path": "testdataset/꽈리고추무침/Img_062_0006.jpg",
       "true_label": "꽈리고추무침",
-      "predicted": "파김치",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "꽈리고추무침",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/떡/떡/꿀떡/Img_047_0144.jpg",
+      "image_path": "testdataset/꿀떡/Img_047_0144.jpg",
       "true_label": "꿀떡",
       "predicted": "꿀떡",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/나박김치/Img_031_0530.jpg",
+      "image_path": "testdataset/나박김치/Img_031_0530.jpg",
       "true_label": "나박김치",
       "predicted": "나박김치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/누룽지/Img_071_0285.jpg",
+      "image_path": "testdataset/누룽지/Img_071_0285.jpg",
       "true_label": "누룽지",
       "predicted": "삼계탕",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/닭갈비/Img_004_0304.jpg",
+      "image_path": "testdataset/닭갈비/Img_004_0304.jpg",
       "true_label": "닭갈비",
       "predicted": "떡볶이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찌개/찌개/닭계장/Img_120_0761.jpg",
+      "image_path": "testdataset/닭계장/Img_120_0761.jpg",
       "true_label": "닭계장",
-      "predicted": "갈비탕",
-      "correct_exact": false,
-      "correct_contains": false
-    },
-    {
-      "image_path": "dataset/kfood/찜/찜/닭볶음탕/Img_128_0533.jpg",
-      "true_label": "닭볶음탕",
-      "predicted": "닭볶음탕",
+      "predicted": "닭계장",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/더덕구이/Img_005_0144.jpg",
-      "true_label": "더덕구이",
-      "predicted": "도라지무침",
+      "image_path": "testdataset/닭볶음탕/Img_128_0533.jpg",
+      "true_label": "닭볶음탕",
+      "predicted": "순두부찌개",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/무침/무침/도라지무침/Img_063_0952.jpg",
+      "image_path": "testdataset/더덕구이/Img_005_0144.jpg",
+      "true_label": "더덕구이",
+      "predicted": "더덕구이",
+      "correct_exact": true,
+      "correct_contains": true
+    },
+    {
+      "image_path": "testdataset/도라지무침/Img_063_0952.jpg",
       "true_label": "도라지무침",
       "predicted": "도라지무침",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/무침/무침/도토리묵/Img_064_0927.jpg",
+      "image_path": "testdataset/도토리묵/Img_064_0927.jpg",
       "true_label": "도토리묵",
       "predicted": "우엉조림",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/동그랑땡/Img_101_0620.jpg",
+      "image_path": "testdataset/동그랑땡/Img_101_0620.jpg",
       "true_label": "동그랑땡",
-      "predicted": "동그랑땡",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "감자전",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찌개/찌개/동태찌개/Img_121_0854.jpg",
+      "image_path": "testdataset/동태찌개/Img_121_0854.jpg",
       "true_label": "동태찌개",
-      "predicted": "무국",
+      "predicted": "나박김치",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찌개/찌개/된장찌개/Img_122_0062.jpg",
+      "image_path": "testdataset/된장찌개/Img_122_0062.jpg",
       "true_label": "된장찌개",
-      "predicted": "동태찌개",
+      "predicted": "순두부찌개",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/두부김치/Img_081_0334.jpg",
+      "image_path": "testdataset/두부김치/Img_081_0334.jpg",
       "true_label": "두부김치",
-      "predicted": "두부김치",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "도토리묵",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/조림/조림/두부조림/Img_110_0597.jpg",
+      "image_path": "testdataset/두부조림/Img_110_0597.jpg",
       "true_label": "두부조림",
       "predicted": "갈치조림",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/조림/조림/땅콩조림/Img_111_0535.jpg",
+      "image_path": "testdataset/땅콩조림/Img_111_0535.jpg",
       "true_label": "땅콩조림",
       "predicted": "우엉조림",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/떡갈비/Img_006_0970.jpg",
+      "image_path": "testdataset/떡갈비/Img_006_0970.jpg",
       "true_label": "떡갈비",
       "predicted": "갈비구이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/국/국/떡국_만두국/Img_015_0522.jpg",
+      "image_path": "testdataset/떡국_만두국/Img_015_0522.jpg",
       "true_label": "떡국_만두국",
-      "predicted": "수제비",
+      "predicted": "떡국",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/적/적/떡꼬치/Img_096_1014.jpg",
+      "image_path": "testdataset/떡꼬치/Img_096_1014.jpg",
       "true_label": "떡꼬치",
       "predicted": "떡꼬치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/떡볶이/Img_082_0535.jpg",
+      "image_path": "testdataset/떡볶이/Img_082_0535.jpg",
       "true_label": "떡볶이",
       "predicted": "순두부찌개",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/면/면/라면/Img_050_0195.jpg",
+      "image_path": "testdataset/라면/Img_050_0195.jpg",
       "true_label": "라면",
       "predicted": "라면",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/라볶이/Img_083_0053.jpg",
+      "image_path": "testdataset/라볶이/Img_083_0053.jpg",
       "true_label": "라볶이",
       "predicted": "라볶이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/막국수/Img_051_0154.jpg",
+      "image_path": "testdataset/막국수/Img_051_0154.jpg",
       "true_label": "막국수",
-      "predicted": "물냉면",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "막국수",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/만두/만두/만두/Img_049_0026.jpg",
+      "image_path": "testdataset/만두/Img_049_0026.jpg",
       "true_label": "만두",
       "predicted": "만두",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/탕/탕/매운탕/Img_137_0137.jpg",
+      "image_path": "testdataset/매운탕/Img_137_0137.jpg",
       "true_label": "매운탕",
-      "predicted": "동태찌개",
+      "predicted": "곱창전골",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/해물/해물/멍게/Img_146_0921.jpg",
+      "image_path": "testdataset/멍게/Img_146_0921.jpg",
       "true_label": "멍게",
-      "predicted": "회무침",
+      "predicted": "깻잎장아찌",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/조림/조림/메추리알장조림/Img_112_0715.jpg",
+      "image_path": "testdataset/메추리알장조림/Img_112_0715.jpg",
       "true_label": "메추리알장조림",
       "predicted": "메추리알장조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/멸치볶음/Img_084_0394.jpg",
+      "image_path": "testdataset/멸치볶음/Img_084_0394.jpg",
       "true_label": "멸치볶음",
       "predicted": "건새우볶음",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/국/국/무국/Img_016_0857.jpg",
+      "image_path": "testdataset/무국/Img_016_0857.jpg",
       "true_label": "무국",
       "predicted": "무국",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/무생채/Img_032_0118.jpg",
+      "image_path": "testdataset/무생채/Img_032_0118.jpg",
       "true_label": "무생채",
       "predicted": "무생채",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/물냉면/Img_052_0475.jpg",
+      "image_path": "testdataset/물냉면/Img_052_0475.jpg",
       "true_label": "물냉면",
       "predicted": "물냉면",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/회/회/물회/Img_148_0059.jpg",
+      "image_path": "testdataset/물회/Img_148_0059.jpg",
       "true_label": "물회",
       "predicted": "물회",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/국/국/미역국/Img_017_0734.jpg",
+      "image_path": "testdataset/미역국/Img_017_0734.jpg",
       "true_label": "미역국",
       "predicted": "미역국",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/나물/나물/미역줄기볶음/Img_042_0861.jpg",
+      "image_path": "testdataset/미역줄기볶음/Img_042_0861.jpg",
       "true_label": "미역줄기볶음",
       "predicted": "미역줄기볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/배추김치/Img_033_0251.jpg",
+      "image_path": "testdataset/배추김치/Img_033_0251.jpg",
       "true_label": "배추김치",
       "predicted": "배추김치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/백김치/Img_034_0900.jpg",
+      "image_path": "testdataset/백김치/Img_034_0900.jpg",
       "true_label": "백김치",
       "predicted": "백김치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/쌈/쌈/보쌈/Img_090_0734.jpg",
+      "image_path": "testdataset/보쌈/Img_090_0734.jpg",
       "true_label": "보쌈",
       "predicted": "훈제오리",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/김치/김치/부추김치/Img_035_0812.jpg",
+      "image_path": "testdataset/부추김치/Img_035_0812.jpg",
       "true_label": "부추김치",
       "predicted": "파김치",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/국/국/북엇국/Img_018_0182.jpg",
+      "image_path": "testdataset/북엇국/Img_018_0182.jpg",
       "true_label": "북엇국",
       "predicted": "",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/불고기/Img_007_0837.jpg",
+      "image_path": "testdataset/불고기/Img_007_0837.jpg",
       "true_label": "불고기",
-      "predicted": "삼겹살",
+      "predicted": "갈비구이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/면/면/비빔냉면/Img_053_0193.jpg",
+      "image_path": "testdataset/비빔냉면/Img_053_0193.jpg",
       "true_label": "비빔냉면",
       "predicted": "콩국수",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/밥/밥/비빔밥/Img_072_0680.jpg",
+      "image_path": "testdataset/비빔밥/Img_072_0680.jpg",
       "true_label": "비빔밥",
-      "predicted": "알밥",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "비빔밥",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/해물/해물/산낙지/Img_147_0901.jpg",
+      "image_path": "testdataset/산낙지/Img_147_0901.jpg",
       "true_label": "산낙지",
       "predicted": "산낙지",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/삼겹살/Img_008_0262.jpg",
+      "image_path": "testdataset/삼겹살/Img_008_0262.jpg",
       "true_label": "삼겹살",
       "predicted": "제육볶음",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/탕/탕/삼계탕/Img_138_0104.jpg",
+      "image_path": "testdataset/삼계탕/Img_138_0104.jpg",
       "true_label": "삼계탕",
       "predicted": "삼계탕",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/새우볶음밥/Img_073_0395.jpg",
+      "image_path": "testdataset/새우볶음밥/Img_073_0395.jpg",
       "true_label": "새우볶음밥",
       "predicted": "새우볶음밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/튀김/튀김/새우튀김/Img_141_0990.jpg",
+      "image_path": "testdataset/새우튀김/Img_141_0990.jpg",
       "true_label": "새우튀김",
       "predicted": "새우튀김",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/생선전/Img_102_0695.jpg",
+      "image_path": "testdataset/생선전/Img_102_0695.jpg",
       "true_label": "생선전",
-      "predicted": "생선전",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "감자전",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/소세지볶음/Img_085_0940.jpg",
+      "image_path": "testdataset/소세지볶음/Img_085_0940.jpg",
       "true_label": "소세지볶음",
       "predicted": "감자조림",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/떡/떡/송편/Img_048_0815.jpg",
+      "image_path": "testdataset/송편/Img_048_0815.jpg",
       "true_label": "송편",
       "predicted": "꿀떡",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찜/찜/수육/Img_129_0429.jpg",
+      "image_path": "testdataset/수육/Img_129_0429.jpg",
       "true_label": "수육",
-      "predicted": "수육",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "편육",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/음청류/음청류/수정과/Img_091_0744.jpg",
+      "image_path": "testdataset/수정과/Img_091_0744.jpg",
       "true_label": "수정과",
       "predicted": "수정과",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/수제비/Img_054_0462.jpg",
+      "image_path": "testdataset/수제비/Img_054_0462.jpg",
       "true_label": "수제비",
       "predicted": "수제비",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/나물/나물/숙주나물/Img_043_0027.jpg",
+      "image_path": "testdataset/숙주나물/Img_043_0027.jpg",
       "true_label": "숙주나물",
       "predicted": "콩나물무침",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찜/찜/순대/Img_130_0438.jpg",
+      "image_path": "testdataset/순대/Img_130_0438.jpg",
       "true_label": "순대",
-      "predicted": "장조림",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "순대",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/찌개/찌개/순두부찌개/Img_123_0430.jpg",
+      "image_path": "testdataset/순두부찌개/Img_123_0430.jpg",
       "true_label": "순두부찌개",
       "predicted": "순두부찌개",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/나물/나물/시금치나물/Img_044_0726.jpg",
+      "image_path": "testdataset/시금치나물/Img_044_0726.jpg",
       "true_label": "시금치나물",
       "predicted": "시금치나물",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/국/국/시래기국/Img_019_0601.jpg",
+      "image_path": "testdataset/시래기국/Img_019_0601.jpg",
       "true_label": "시래기국",
       "predicted": "시래기국",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/음청류/음청류/식혜/Img_092_0472.jpg",
+      "image_path": "testdataset/식혜/Img_092_0472.jpg",
       "true_label": "식혜",
       "predicted": "식혜",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/알밥/Img_074_0500.jpg",
+      "image_path": "testdataset/알밥/Img_074_0500.jpg",
       "true_label": "알밥",
       "predicted": "알밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/나물/나물/애호박볶음/Img_045_0053.jpg",
+      "image_path": "testdataset/애호박볶음/Img_045_0053.jpg",
       "true_label": "애호박볶음",
       "predicted": "애호박볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/한과/한과/약과/Img_143_0994.jpg",
+      "image_path": "testdataset/약과/Img_143_0994.jpg",
       "true_label": "약과",
       "predicted": "약과",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/한과/한과/약식/Img_144_0438.jpg",
+      "image_path": "testdataset/약식/Img_144_0438.jpg",
       "true_label": "약식",
       "predicted": "약식",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/장/장/양념게장/Img_094_0851.jpg",
+      "image_path": "testdataset/양념게장/Img_094_0851.jpg",
       "true_label": "양념게장",
-      "predicted": "매운탕",
+      "predicted": "갈치조림",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/기타/기타/양념치킨/Img_023_0522.jpg",
+      "image_path": "testdataset/양념치킨/Img_023_0522.jpg",
       "true_label": "양념치킨",
       "predicted": "양념치킨",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/어묵볶음/Img_086_0945.jpg",
+      "image_path": "testdataset/어묵볶음/Img_086_0945.jpg",
       "true_label": "어묵볶음",
       "predicted": "어묵볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/연근조림/Img_113_0760.jpg",
+      "image_path": "testdataset/연근조림/Img_113_0760.jpg",
       "true_label": "연근조림",
       "predicted": "연근조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/열무국수/Img_055_0578.jpg",
+      "image_path": "testdataset/열무국수/Img_055_0578.jpg",
       "true_label": "열무국수",
       "predicted": "열무국수",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/열무김치/Img_036_0232.jpg",
+      "image_path": "testdataset/열무김치/Img_036_0232.jpg",
       "true_label": "열무김치",
       "predicted": "열무김치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/오이소박이/Img_037_0277.jpg",
+      "image_path": "testdataset/오이소박이/Img_037_0277.jpg",
       "true_label": "오이소박이",
       "predicted": "오이소박이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/오징어채볶음/Img_087_0348.jpg",
+      "image_path": "testdataset/오징어채볶음/Img_087_0348.jpg",
       "true_label": "오징어채볶음",
       "predicted": "오징어채볶음",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/튀김/튀김/오징어튀김/Img_142_0666.jpg",
+      "image_path": "testdataset/오징어튀김/Img_142_0666.jpg",
       "true_label": "오징어튀김",
       "predicted": "오징어튀김",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/우엉조림/Img_114_0971.jpg",
+      "image_path": "testdataset/우엉조림/Img_114_0971.jpg",
       "true_label": "우엉조림",
-      "predicted": "오징어채",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "우엉조림",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/유부초밥/Img_075_0450.jpg",
+      "image_path": "testdataset/유부초밥/Img_075_0450.jpg",
       "true_label": "유부초밥",
       "predicted": "유부초밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/국/국/육개장/Img_020_0767.jpg",
+      "image_path": "testdataset/육개장/Img_020_0767.jpg",
       "true_label": "육개장",
-      "predicted": "순두부찌개",
+      "predicted": "떡국",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/회/회/육회/Img_149_0547.jpg",
+      "image_path": "testdataset/육회/Img_149_0547.jpg",
       "true_label": "육회",
       "predicted": "육회",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/잔치국수/Img_056_0498.jpg",
+      "image_path": "testdataset/잔치국수/Img_056_0498.jpg",
       "true_label": "잔치국수",
       "predicted": "잔치국수",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/밥/밥/잡곡밥/Img_076_0142.jpg",
+      "image_path": "testdataset/잡곡밥/Img_076_0142.jpg",
       "true_label": "잡곡밥",
       "predicted": "잡곡밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/무침/무침/잡채/Img_065_0833.jpg",
+      "image_path": "testdataset/잡채/Img_065_0833.jpg",
       "true_label": "잡채",
       "predicted": "잡채",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/장어구이/Img_009_0870.jpg",
+      "image_path": "testdataset/장어구이/Img_009_0870.jpg",
       "true_label": "장어구이",
-      "predicted": "황태구이",
+      "predicted": "편육",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/조림/조림/장조림/Img_115_0968.jpg",
+      "image_path": "testdataset/장조림/Img_115_0968.jpg",
       "true_label": "장조림",
       "predicted": "장조림",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/죽/죽/전복죽/Img_117_0821.jpg",
+      "image_path": "testdataset/전복죽/Img_117_0821.jpg",
       "true_label": "전복죽",
       "predicted": "전복죽",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/기타/기타/젓갈/Img_024_0986.jpg",
+      "image_path": "testdataset/젓갈/Img_024_0986.jpg",
       "true_label": "젓갈",
       "predicted": "",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/제육볶음/Img_088_0637.jpg",
+      "image_path": "testdataset/제육볶음/Img_088_0637.jpg",
       "true_label": "제육볶음",
-      "predicted": "라볶이",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "제육볶음",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/조개구이/Img_010_0850.jpg",
+      "image_path": "testdataset/조개구이/Img_010_0850.jpg",
       "true_label": "조개구이",
       "predicted": "조개구이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/조기구이/Img_011_0659.jpg",
+      "image_path": "testdataset/조기구이/Img_011_0659.jpg",
       "true_label": "조기구이",
       "predicted": "조기구이",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/찜/찜/족발/Img_131_0161.jpg",
+      "image_path": "testdataset/족발/Img_131_0161.jpg",
       "true_label": "족발",
       "predicted": "족발",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/볶음/볶음/주꾸미볶음/Img_089_0919.jpg",
+      "image_path": "testdataset/주꾸미볶음/Img_089_0919.jpg",
       "true_label": "주꾸미볶음",
-      "predicted": "닭갈비",
+      "predicted": "쫄면",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/밥/밥/주먹밥/Img_077_0209.jpg",
+      "image_path": "testdataset/주먹밥/Img_077_0209.jpg",
       "true_label": "주먹밥",
       "predicted": "주먹밥",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/짜장면/Img_057_0190.jpg",
+      "image_path": "testdataset/짜장면/Img_057_0190.jpg",
       "true_label": "짜장면",
       "predicted": "짜장면",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/짬뽕/Img_058_0258.jpg",
+      "image_path": "testdataset/짬뽕/Img_058_0258.jpg",
       "true_label": "짬뽕",
       "predicted": "짬뽕",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/면/면/쫄면/Img_059_0050.jpg",
+      "image_path": "testdataset/쫄면/Img_059_0050.jpg",
       "true_label": "쫄면",
       "predicted": "비빔밥",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/찜/찜/찜닭/Img_132_0888.jpg",
+      "image_path": "testdataset/찜닭/Img_132_0888.jpg",
       "true_label": "찜닭",
       "predicted": "찜닭",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/총각김치/Img_038_0081.jpg",
+      "image_path": "testdataset/총각김치/Img_038_0081.jpg",
       "true_label": "총각김치",
       "predicted": "",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/탕/탕/추어탕/Img_139_0979.jpg",
+      "image_path": "testdataset/추어탕/Img_139_0979.jpg",
       "true_label": "추어탕",
-      "predicted": "곰탕_설렁탕",
+      "predicted": "순두부찌개",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/면/면/칼국수/Img_060_0900.jpg",
+      "image_path": "testdataset/칼국수/Img_060_0900.jpg",
       "true_label": "칼국수",
       "predicted": "칼국수",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/조림/조림/코다리조림/Img_116_0564.jpg",
+      "image_path": "testdataset/코다리조림/Img_116_0564.jpg",
       "true_label": "코다리조림",
       "predicted": "갈치구이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/면/면/콩국수/Img_061_0796.jpg",
+      "image_path": "testdataset/콩국수/Img_061_0796.jpg",
       "true_label": "콩국수",
       "predicted": "콩국수",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/국/국/콩나물국/Img_021_0909.jpg",
+      "image_path": "testdataset/콩나물국/Img_021_0909.jpg",
       "true_label": "콩나물국",
-      "predicted": "잔치국수",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "콩나물국",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/무침/무침/콩나물무침/Img_066_0302.jpg",
+      "image_path": "testdataset/콩나물무침/Img_066_0302.jpg",
       "true_label": "콩나물무침",
-      "predicted": "숙주나물",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "콩나물무침",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/기타/기타/콩자반/Img_025_0627.jpg",
+      "image_path": "testdataset/콩자반/Img_025_0627.jpg",
       "true_label": "콩자반",
       "predicted": "콩자반",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/김치/김치/파김치/Img_039_0512.jpg",
+      "image_path": "testdataset/파김치/Img_039_0512.jpg",
       "true_label": "파김치",
       "predicted": "파김치",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/전 (2)/전/파전/Img_103_0087.JPG",
+      "image_path": "testdataset/파전/Img_103_0087.JPG",
       "true_label": "파전",
-      "predicted": "고추튀김",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "파전",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/기타/기타/편육/Img_026_0443.jpg",
+      "image_path": "testdataset/편육/Img_026_0443.jpg",
       "true_label": "편육",
-      "predicted": "보쌈",
+      "predicted": "수육",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/기타/기타/피자/Img_027_0598.jpg",
+      "image_path": "testdataset/피자/Img_027_0598.jpg",
       "true_label": "피자",
       "predicted": "피자",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/한과/한과/한과/Img_145_0381.jpg",
+      "image_path": "testdataset/한과/Img_145_0381.jpg",
       "true_label": "한과",
       "predicted": "한과",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/찜/찜/해물찜/Img_133_0092.jpg",
+      "image_path": "testdataset/해물찜/Img_133_0092.jpg",
       "true_label": "해물찜",
-      "predicted": "짬뽕",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "해물찜",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/전/전/호박전/Img_104_0233.jpg",
+      "image_path": "testdataset/호박전/Img_104_0233.jpg",
       "true_label": "호박전",
       "predicted": "감자전",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/죽/죽/호박죽/Img_118_0201.jpg",
+      "image_path": "testdataset/호박죽/Img_118_0201.jpg",
       "true_label": "호박죽",
       "predicted": "호박죽",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/무침/무침/홍어무침/Img_067_0779.jpg",
+      "image_path": "testdataset/홍어무침/Img_067_0779.jpg",
       "true_label": "홍어무침",
       "predicted": "양념게장",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/구이/구이/황태구이/Img_012_0107.jpg",
+      "image_path": "testdataset/황태구이/Img_012_0107.jpg",
       "true_label": "황태구이",
       "predicted": "갈비구이",
       "correct_exact": false,
       "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/무침/무침/회무침/Img_068_0318.jpg",
+      "image_path": "testdataset/회무침/Img_068_0318.jpg",
       "true_label": "회무침",
-      "predicted": "회무침",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "꽈리고추무침",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
-      "image_path": "dataset/kfood/기타/기타/후라이드치킨/Img_028_0800.jpg",
+      "image_path": "testdataset/후라이드치킨/Img_028_0800.jpg",
       "true_label": "후라이드치킨",
       "predicted": "후라이드치킨",
       "correct_exact": true,
       "correct_contains": true
     },
     {
-      "image_path": "dataset/kfood/구이/구이/훈제오리/Img_013_0261.jpg",
+      "image_path": "testdataset/훈제오리/Img_013_0261.jpg",
       "true_label": "훈제오리",
-      "predicted": "소세지볶음",
+      "predicted": "편육",
       "correct_exact": false,
       "correct_contains": false
     }
   ],
   "label_accuracies": {
     "가지볶음": 100.0,
-    "간장게장": 0.0,
+    "간장게장": 100.0,
     "갈비구이": 0.0,
     "갈비찜": 0.0,
     "갈비탕": 0.0,
     "갈치구이": 100.0,
     "갈치조림": 0.0,
     "감자전": 0.0,
-    "감자조림": 0.0,
+    "감자조림": 100.0,
     "감자채볶음": 0.0,
-    "감자탕": 100.0,
-    "갓김치": 0.0,
+    "감자탕": 0.0,
+    "갓김치": 100.0,
     "건새우볶음": 100.0,
     "경단": 100.0,
     "계란국": 100.0,
@@ -1089,23 +1089,23 @@
     "김치찌개": 0.0,
     "김치찜": 0.0,
     "깍두기": 0.0,
-    "깻잎장아찌": 0.0,
+    "깻잎장아찌": 100.0,
     "꼬막찜": 100.0,
     "꽁치조림": 100.0,
-    "꽈리고추무침": 0.0,
+    "꽈리고추무침": 100.0,
     "꿀떡": 100.0,
     "나박김치": 100.0,
     "누룽지": 0.0,
     "닭갈비": 0.0,
-    "닭계장": 0.0,
-    "닭볶음탕": 100.0,
-    "더덕구이": 0.0,
+    "닭계장": 100.0,
+    "닭볶음탕": 0.0,
+    "더덕구이": 100.0,
     "도라지무침": 100.0,
     "도토리묵": 0.0,
-    "동그랑땡": 100.0,
+    "동그랑땡": 0.0,
     "동태찌개": 0.0,
     "된장찌개": 0.0,
-    "두부김치": 100.0,
+    "두부김치": 0.0,
     "두부조림": 0.0,
     "땅콩조림": 0.0,
     "떡갈비": 0.0,
@@ -1114,7 +1114,7 @@
     "떡볶이": 0.0,
     "라면": 100.0,
     "라볶이": 100.0,
-    "막국수": 0.0,
+    "막국수": 100.0,
     "만두": 100.0,
     "매운탕": 0.0,
     "멍게": 0.0,
@@ -1133,20 +1133,20 @@
     "북엇국": 0.0,
     "불고기": 0.0,
     "비빔냉면": 0.0,
-    "비빔밥": 0.0,
+    "비빔밥": 100.0,
     "산낙지": 100.0,
     "삼겹살": 0.0,
     "삼계탕": 100.0,
     "새우볶음밥": 100.0,
     "새우튀김": 100.0,
-    "생선전": 100.0,
+    "생선전": 0.0,
     "소세지볶음": 0.0,
     "송편": 0.0,
-    "수육": 100.0,
+    "수육": 0.0,
     "수정과": 100.0,
     "수제비": 100.0,
     "숙주나물": 0.0,
-    "순대": 0.0,
+    "순대": 100.0,
     "순두부찌개": 100.0,
     "시금치나물": 100.0,
     "시래기국": 100.0,
@@ -1164,7 +1164,7 @@
     "오이소박이": 100.0,
     "오징어채볶음": 100.0,
     "오징어튀김": 100.0,
-    "우엉조림": 0.0,
+    "우엉조림": 100.0,
     "유부초밥": 100.0,
     "육개장": 0.0,
     "육회": 100.0,
@@ -1175,7 +1175,7 @@
     "장조림": 100.0,
     "전복죽": 100.0,
     "젓갈": 0.0,
-    "제육볶음": 0.0,
+    "제육볶음": 100.0,
     "조개구이": 100.0,
     "조기구이": 100.0,
     "족발": 100.0,
@@ -1190,20 +1190,20 @@
     "칼국수": 100.0,
     "코다리조림": 0.0,
     "콩국수": 100.0,
-    "콩나물국": 0.0,
-    "콩나물무침": 0.0,
+    "콩나물국": 100.0,
+    "콩나물무침": 100.0,
     "콩자반": 100.0,
     "파김치": 100.0,
-    "파전": 0.0,
+    "파전": 100.0,
     "편육": 0.0,
     "피자": 100.0,
     "한과": 100.0,
-    "해물찜": 0.0,
+    "해물찜": 100.0,
     "호박전": 0.0,
     "호박죽": 100.0,
     "홍어무침": 0.0,
     "황태구이": 0.0,
-    "회무침": 100.0,
+    "회무침": 0.0,
     "후라이드치킨": 100.0,
     "훈제오리": 0.0
   },
@@ -1213,7 +1213,7 @@
       "total": 1
     },
     "간장게장": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "갈비구이": {
@@ -1241,7 +1241,7 @@
       "total": 1
     },
     "감자조림": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "감자채볶음": {
@@ -1249,11 +1249,11 @@
       "total": 1
     },
     "감자탕": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "갓김치": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "건새우볶음": {
@@ -1341,7 +1341,7 @@
       "total": 1
     },
     "깻잎장아찌": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "꼬막찜": {
@@ -1353,7 +1353,7 @@
       "total": 1
     },
     "꽈리고추무침": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "꿀떡": {
@@ -1373,15 +1373,15 @@
       "total": 1
     },
     "닭계장": {
-      "correct": 0,
-      "total": 1
-    },
-    "닭볶음탕": {
       "correct": 1,
       "total": 1
     },
-    "더덕구이": {
+    "닭볶음탕": {
       "correct": 0,
+      "total": 1
+    },
+    "더덕구이": {
+      "correct": 1,
       "total": 1
     },
     "도라지무침": {
@@ -1393,7 +1393,7 @@
       "total": 1
     },
     "동그랑땡": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "동태찌개": {
@@ -1405,7 +1405,7 @@
       "total": 1
     },
     "두부김치": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "두부조림": {
@@ -1441,7 +1441,7 @@
       "total": 1
     },
     "막국수": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "만두": {
@@ -1517,7 +1517,7 @@
       "total": 1
     },
     "비빔밥": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "산낙지": {
@@ -1541,7 +1541,7 @@
       "total": 1
     },
     "생선전": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "소세지볶음": {
@@ -1553,7 +1553,7 @@
       "total": 1
     },
     "수육": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "수정과": {
@@ -1569,7 +1569,7 @@
       "total": 1
     },
     "순대": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "순두부찌개": {
@@ -1641,7 +1641,7 @@
       "total": 1
     },
     "우엉조림": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "유부초밥": {
@@ -1685,7 +1685,7 @@
       "total": 1
     },
     "제육볶음": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "조개구이": {
@@ -1745,11 +1745,11 @@
       "total": 1
     },
     "콩나물국": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "콩나물무침": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "콩자반": {
@@ -1761,7 +1761,7 @@
       "total": 1
     },
     "파전": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "편육": {
@@ -1777,7 +1777,7 @@
       "total": 1
     },
     "해물찜": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "호박전": {
@@ -1797,7 +1797,7 @@
       "total": 1
     },
     "회무침": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "후라이드치킨": {

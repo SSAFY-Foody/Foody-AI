@@ -1,7 +1,7 @@
 {
   "model_name": "Fine-tuned Model",
-  "accuracy": 64.0,
-  "correct": 96,
+  "accuracy": 66.66666666666666,
+  "correct": 100,
   "total": 150,
   "results": [
     {
@@ -21,7 +21,7 @@
     {
       "image_path": "testdataset/갈비구이/Img_000_0229.jpg",
       "true_label": "갈비구이",
-      "predicted": "비빔밥",
+      "predicted": "열무국수",
       "correct_exact": false,
       "correct_contains": false
     },
@@ -56,9 +56,9 @@
     {
       "image_path": "testdataset/감자전/Img_097_0593.jpg",
       "true_label": "감자전",
-      "predicted": "김치전",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "감자전",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/감자조림/Img_107_0131.jpg",
@@ -70,16 +70,16 @@
     {
       "image_path": "testdataset/감자채볶음/Img_078_0491.jpg",
       "true_label": "감자채볶음",
-      "predicted": "감자채",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "감자채볶음",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/감자탕/Img_135_0922.jpg",
       "true_label": "감자탕",
-      "predicted": "추어탕",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "감자탕",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/갓김치/Img_029_0709.jpg",
@@ -329,9 +329,9 @@
     {
       "image_path": "testdataset/동그랑땡/Img_101_0620.jpg",
       "true_label": "동그랑땡",
-      "predicted": "동그랑땡",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "파전",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/동태찌개/Img_121_0854.jpg",
@@ -343,9 +343,9 @@
     {
       "image_path": "testdataset/된장찌개/Img_122_0062.jpg",
       "true_label": "된장찌개",
-      "predicted": "순두부찌개",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "된장찌개",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/두부김치/Img_081_0334.jpg",
@@ -392,9 +392,9 @@
     {
       "image_path": "testdataset/떡볶이/Img_082_0535.jpg",
       "true_label": "떡볶이",
-      "predicted": "떡국",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "떡볶이",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/라면/Img_050_0195.jpg",
@@ -413,9 +413,9 @@
     {
       "image_path": "testdataset/막국수/Img_051_0154.jpg",
       "true_label": "막국수",
-      "predicted": "막국수",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "물냉면",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/만두/Img_049_0026.jpg",
@@ -434,7 +434,7 @@
     {
       "image_path": "testdataset/멍게/Img_146_0921.jpg",
       "true_label": "멍게",
-      "predicted": "콩국수",
+      "predicted": "열무국수",
       "correct_exact": false,
       "correct_contains": false
     },
@@ -448,7 +448,7 @@
     {
       "image_path": "testdataset/멸치볶음/Img_084_0394.jpg",
       "true_label": "멸치볶음",
-      "predicted": "건새우볶음",
+      "predicted": "꽈리고추무침",
       "correct_exact": false,
       "correct_contains": false
     },
@@ -560,7 +560,7 @@
     {
       "image_path": "testdataset/삼겹살/Img_008_0262.jpg",
       "true_label": "삼겹살",
-      "predicted": "제육볶음",
+      "predicted": "주꾸미볶음",
       "correct_exact": false,
       "correct_contains": false
     },
@@ -595,9 +595,9 @@
     {
       "image_path": "testdataset/소세지볶음/Img_085_0940.jpg",
       "true_label": "소세지볶음",
-      "predicted": "감자조림",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "소세지볶음",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/송편/Img_048_0815.jpg",
@@ -609,9 +609,9 @@
     {
       "image_path": "testdataset/수육/Img_129_0429.jpg",
       "true_label": "수육",
-      "predicted": "편육",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "수육",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/수정과/Img_091_0744.jpg",
@@ -630,9 +630,9 @@
     {
       "image_path": "testdataset/숙주나물/Img_043_0027.jpg",
       "true_label": "숙주나물",
-      "predicted": "숙주나물",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "콩나물무침",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/순대/Img_130_0438.jpg",
@@ -658,9 +658,9 @@
     {
       "image_path": "testdataset/시래기국/Img_019_0601.jpg",
       "true_label": "시래기국",
-      "predicted": "시래기국",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "열무김치",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/식혜/Img_092_0472.jpg",
@@ -700,7 +700,7 @@
     {
       "image_path": "testdataset/양념게장/Img_094_0851.jpg",
       "true_label": "양념게장",
-      "predicted": "갈치조림",
+      "predicted": "두부김치",
       "correct_exact": false,
       "correct_contains": false
     },
@@ -714,9 +714,9 @@
     {
       "image_path": "testdataset/어묵볶음/Img_086_0945.jpg",
       "true_label": "어묵볶음",
-      "predicted": "잡채",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "어묵볶음",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/연근조림/Img_113_0760.jpg",
@@ -777,9 +777,9 @@
     {
       "image_path": "testdataset/육개장/Img_020_0767.jpg",
       "true_label": "육개장",
-      "predicted": "떡국",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "육개장",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/육회/Img_149_0547.jpg",
@@ -840,9 +840,9 @@
     {
       "image_path": "testdataset/제육볶음/Img_088_0637.jpg",
       "true_label": "제육볶음",
-      "predicted": "제육볶음",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "닭갈비",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/조개구이/Img_010_0850.jpg",
@@ -938,9 +938,9 @@
     {
       "image_path": "testdataset/콩국수/Img_061_0796.jpg",
       "true_label": "콩국수",
-      "predicted": "콩국수",
-      "correct_exact": true,
-      "correct_contains": true
+      "predicted": "물냉면",
+      "correct_exact": false,
+      "correct_contains": false
     },
     {
       "image_path": "testdataset/콩나물국/Img_021_0909.jpg",
@@ -952,9 +952,9 @@
     {
       "image_path": "testdataset/콩나물무침/Img_066_0302.jpg",
       "true_label": "콩나물무침",
-      "predicted": "숙주나물",
-      "correct_exact": false,
-      "correct_contains": false
+      "predicted": "콩나물무침",
+      "correct_exact": true,
+      "correct_contains": true
     },
     {
       "image_path": "testdataset/콩자반/Img_025_0627.jpg",
@@ -1063,10 +1063,10 @@
     "갈비탕": 0.0,
     "갈치구이": 100.0,
     "갈치조림": 0.0,
-    "감자전": 0.0,
+    "감자전": 100.0,
     "감자조림": 100.0,
-    "감자채볶음": 0.0,
-    "감자탕": 0.0,
+    "감자채볶음": 100.0,
+    "감자탕": 100.0,
     "갓김치": 100.0,
     "건새우볶음": 100.0,
     "경단": 100.0,
@@ -1102,19 +1102,19 @@
     "더덕구이": 100.0,
     "도라지무침": 100.0,
     "도토리묵": 0.0,
-    "동그랑땡": 100.0,
+    "동그랑땡": 0.0,
     "동태찌개": 0.0,
-    "된장찌개": 0.0,
+    "된장찌개": 100.0,
     "두부김치": 100.0,
     "두부조림": 0.0,
     "땅콩조림": 0.0,
     "떡갈비": 0.0,
     "떡국_만두국": 0.0,
     "떡꼬치": 100.0,
-    "떡볶이": 0.0,
+    "떡볶이": 100.0,
     "라면": 100.0,
     "라볶이": 100.0,
-    "막국수": 100.0,
+    "막국수": 0.0,
     "만두": 100.0,
     "매운탕": 0.0,
     "멍게": 0.0,
@@ -1140,16 +1140,16 @@
     "새우볶음밥": 100.0,
     "새우튀김": 100.0,
     "생선전": 0.0,
-    "소세지볶음": 0.0,
+    "소세지볶음": 100.0,
     "송편": 0.0,
-    "수육": 0.0,
+    "수육": 100.0,
     "수정과": 100.0,
     "수제비": 100.0,
-    "숙주나물": 100.0,
+    "숙주나물": 0.0,
     "순대": 100.0,
     "순두부찌개": 100.0,
     "시금치나물": 100.0,
-    "시래기국": 100.0,
+    "시래기국": 0.0,
     "식혜": 100.0,
     "알밥": 100.0,
     "애호박볶음": 100.0,
@@ -1157,7 +1157,7 @@
     "약식": 100.0,
     "양념게장": 0.0,
     "양념치킨": 100.0,
-    "어묵볶음": 0.0,
+    "어묵볶음": 100.0,
     "연근조림": 100.0,
     "열무국수": 100.0,
     "열무김치": 100.0,
@@ -1166,7 +1166,7 @@
     "오징어튀김": 100.0,
     "우엉조림": 100.0,
     "유부초밥": 100.0,
-    "육개장": 0.0,
+    "육개장": 100.0,
     "육회": 100.0,
     "잔치국수": 100.0,
     "잡곡밥": 100.0,
@@ -1175,7 +1175,7 @@
     "장조림": 100.0,
     "전복죽": 100.0,
     "젓갈": 0.0,
-    "제육볶음": 100.0,
+    "제육볶음": 0.0,
     "조개구이": 100.0,
     "조기구이": 100.0,
     "족발": 100.0,
@@ -1189,9 +1189,9 @@
     "추어탕": 100.0,
     "칼국수": 100.0,
     "코다리조림": 0.0,
-    "콩국수": 100.0,
+    "콩국수": 0.0,
     "콩나물국": 100.0,
-    "콩나물무침": 0.0,
+    "콩나물무침": 100.0,
     "콩자반": 100.0,
     "파김치": 100.0,
     "파전": 100.0,
@@ -1237,7 +1237,7 @@
       "total": 1
     },
     "감자전": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "감자조림": {
@@ -1245,11 +1245,11 @@
       "total": 1
     },
     "감자채볶음": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "감자탕": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "갓김치": {
@@ -1393,7 +1393,7 @@
       "total": 1
     },
     "동그랑땡": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "동태찌개": {
@@ -1401,7 +1401,7 @@
       "total": 1
     },
     "된장찌개": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "두부김치": {
@@ -1429,7 +1429,7 @@
       "total": 1
     },
     "떡볶이": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "라면": {
@@ -1441,7 +1441,7 @@
       "total": 1
     },
     "막국수": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "만두": {
@@ -1545,7 +1545,7 @@
       "total": 1
     },
     "소세지볶음": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "송편": {
@@ -1553,7 +1553,7 @@
       "total": 1
     },
     "수육": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "수정과": {
@@ -1565,7 +1565,7 @@
       "total": 1
     },
     "숙주나물": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "순대": {
@@ -1581,7 +1581,7 @@
       "total": 1
     },
     "시래기국": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "식혜": {
@@ -1613,7 +1613,7 @@
       "total": 1
     },
     "어묵볶음": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "연근조림": {
@@ -1649,7 +1649,7 @@
       "total": 1
     },
     "육개장": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "육회": {
@@ -1685,7 +1685,7 @@
       "total": 1
     },
     "제육볶음": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "조개구이": {
@@ -1741,7 +1741,7 @@
       "total": 1
     },
     "콩국수": {
-      "correct": 1,
+      "correct": 0,
       "total": 1
     },
     "콩나물국": {
@@ -1749,7 +1749,7 @@
       "total": 1
     },
     "콩나물무침": {
-      "correct": 0,
+      "correct": 1,
       "total": 1
     },
     "콩자반": {

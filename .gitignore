@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-
+.vscode/
 # Environment variables
 .env
 *.env
@@ -46,7 +46,7 @@ analysis/logs/
 #vlm training 폴더 제외
 vlmtraining/dataset/
 vlmtraining/ignore/
-vlmtraining/test/testdatasets/
+vlmtraining/test/testdataset/
 vlmtraining/trained_models/
 
 vlmtraining/trained_models/
