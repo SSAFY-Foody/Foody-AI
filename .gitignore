@@ -35,7 +35,22 @@ ref.txt
 .DS_Store
 Thumbs.db
 
-#vlm 데이터 폴더 제외
-vlm/dataset/
-vlm/yolov3
+#vlmmachine 폴더 제외
+# vlm/dataset/
+vlmmachine/chroma_foods/
 vlm/visionmodel
+
+#analysis 폴더 제외
+analysis/logs/
+
+#vlm training 폴더 제외
+vlmtraining/dataset/
+vlmtraining/ignore/
+vlmtraining/test/testdatasets/
+vlmtraining/trained_models/
+
+vlmtraining/trained_models/
+*.safetensors
+*.pt
+*.pth
+
