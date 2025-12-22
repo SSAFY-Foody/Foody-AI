@@ -20,15 +20,15 @@ Vision-Language Model (VLM)을 활용하여 음식 이미지를 자동 인식하
 Foody는 크게 세 가지의 서버로 구성되어 있습니다.
 각 서버의 상세 설정 및 구조는 각 레포지토리의 README를 참고하세요.
 
-### 1. [🧠 Foody-AI (AI 분석 서버)](./Foody-AI/README.md)
+### 1. [🧠 Foody-AI (AI 분석 서버)](https://github.com/SSAFY-Foody/Foody-AI)
 - **역할**: 음식 이미지 인식 및 식단 분석
 - **핵심 기술**: Vision-Language Model (VLM), PyTorch
 
-### 2. [🛡️ Foody-Backend (API 서버)](./Foody-Backend/README.md)
+### 2. [🛡️ Foody-Backend (API 서버)](https://github.com/SSAFY-Foody/Foody-Backend)
 - **역할**: 사용자 인증/인가, 데이터 관리(CRUD), 커뮤니티 기능, AI 서버 통신, 데이터베이스 통신
 - **핵심 기술**: Spring Boot 3, MyBatis, MySQL, JWT, REST API, WebSocket, OAuth2.0
 
-### 3. [🎨 Foody-Frontend (웹 클라이언트)](./Foody-Frontend/README.md)
+### 3. [🎨 Foody-Frontend (웹 클라이언트)](https://github.com/SSAFY-Foody/Foody-Frontend)
 - **역할**: 사용자 인터페이스(UI), 식단 시각화, 커뮤니티 상호작용
 - **핵심 기술**: Vue.js 3, Vite, TypeScript, TailwindCSS, Pinia
 
@@ -48,9 +48,9 @@ Foody는 크게 세 가지의 서버로 구성되어 있습니다.
 
 프로젝트를 실행하려면 각 모듈별 설정을 완료해야 합니다. 상세 내용은 아래 링크를 확인하세요.
 
-- **Backend 설정 및 실행**: [Foody-Backend README](./Foody-Backend/README.md)
-- **Frontend 설정 및 실행**: [Foody-Frontend README](./Foody-Frontend/README.md)
-- **AI 서버 설정 및 실행**: [Foody-AI README](./Foody-AI/README.md)
+- **Backend 설정 및 실행**: [Foody-Backend README](https://github.com/SSAFY-Foody/Foody-Backend)
+- **Frontend 설정 및 실행**: [Foody-Frontend README](https://github.com/SSAFY-Foody/Foody-Frontend)
+- **AI 서버 설정 및 실행**: [Foody-AI README](https://github.com/SSAFY-Foody/Foody-AI)
 
 # Foody-AI
 
