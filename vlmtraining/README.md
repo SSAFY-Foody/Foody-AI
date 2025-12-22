@@ -1,6 +1,5 @@
 # VLM Training
 
----
 
 
 BaseModel : Qwen 2.5 VL 3B (Hugging Face)
