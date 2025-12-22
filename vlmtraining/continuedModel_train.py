@@ -2,14 +2,13 @@
 """
 기존에 있던 LoRA 어댑터 모델을 불러와서 한국 음식 이미지 분류기 태스크로 추가 학습코드.
 LoRA 어댑터만 불러와서 학습을 진행하므로, optimizer/scheduler 상태는 초기화됨.
-python ./continuedModel_train.py --load_dir ./trained_models/qwen25_v4 --output_dir ./trained_models/qwen25_v5 --train_csv ./train_csvs/train_3.csv
 
 
 python continuedModel_train.py \
   --load_dir ./trained_models/qwen25_v8 \
   --output_dir ./trained_models/qwen25_v9 \
-  --train_csv ./train_csvs/train_3.csv \
-  --epochs 5
+  --train_csv ./train_csvs/train_4.csv \
+  --epochs 6
 
 """
 
