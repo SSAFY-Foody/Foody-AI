@@ -66,11 +66,30 @@ Foody는 크게 세 가지의 서버로 구성되어 있습니다.
 
 ## 🚀 실행 방법 (Run)
 
-*(AI 서버 실행에 필요한 의존성 및 실행 명령어를 여기에 기술하세요. 예: pip install -r requirements.txt)*
+* required packages</br>transformers>=4.40.0
+</br>peft>=0.10.0
+accelerate>=0.27.0</br>
+bitsandbytes>=0.43.0</br>
+datasets>=2.18.0</br>
+torch>=2.0.0</br>
+pillow>=10.0.0 
 
 ```bash
-# 예시 명령어
-# python analysis/main.py
+# vlmmachine 서버 구동 예시 명령어
+uvicorn app_v2:app --host 0.0.0.0 --port 8000
+
+# vlm analysis 서버 구동 예시 명령어
+uvicorn app_v2:app --host 0.0.0.0 --port 7000
+
+# Qwen 모델 학습 예시 명령어
+python continuedModel_train.py \
+  --load_dir ./trained_models/qwen25_v8 \
+  --output_dir ./trained_models/qwen25_v9 \
+  --train_csv ./train_csvs/train_4.csv \
+  --epochs 6
+
+# Qwen 모델 테스트 명령어
+python test.py --finetuned_path ../trained_models/qwen25_v5 --test_cxv ./test.csv --output_dir ../test_results/v5
 ```
 
 ---
