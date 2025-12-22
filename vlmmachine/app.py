@@ -16,14 +16,10 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 from dotenv import load_dotenv
 
-# =========================
 # .env 로드
-# =========================
 load_dotenv()
 
-# =========================
 # SQL 설정
-# =========================
 DATABASE_URL = os.getenv("FOODY_DATABASE_URL")
 if not DATABASE_URL:
     raise RuntimeError("FOODY_DATABASE_URL 환경변수가 설정되어 있지 않습니다.")
@@ -41,9 +37,7 @@ def get_db():
         db.close()
 
 
-# =========================
 # 기존 FOOD 테이블 매핑
-# =========================
 class Foods(Base):
     __tablename__ = "foods"
 
@@ -60,9 +54,7 @@ class Foods(Base):
     natrium = Column("natrium_g", Float, nullable=False, default=0)
 
 
-# =========================
 # 응답 모델(JSON)
-# =========================
 class FoodResponse(BaseModel):
     name: str
     standard: str
@@ -74,28 +66,99 @@ class FoodResponse(BaseModel):
     natrium: float
 
 
-# =========================
 # 유틸: 소수점 둘째자리 반올림
-# =========================
 def round2(value: float) -> float:
     return round(float(value), 2)
 
 
-# =========================
 # Qwen VLM 클라이언트 (Base model only)
-# =========================
+from pathlib import Path
+
 class QwenClient:
     def __init__(self):
-        print("[INFO] Loading Qwen2.5-VL-3B-Instruct....")
+        """
+        우선순위:
+        1) FOODY_VLM_MODEL_DIR 환경변수로 지정한 로컬 모델/체크포인트
+        2) 없으면 베이스 모델 (Qwen/Qwen2.5-VL-3B-Instruct)
+        """
+        base_id = "Qwen/Qwen2.5-VL-3B-Instruct"
+        local_dir = os.getenv("FOODY_VLM_MODEL_DIR", "").strip()
 
-        self.processor = AutoProcessor.from_pretrained("Qwen/Qwen2.5-VL-3B-Instruct")
-        self.model = AutoModelForVision2Seq.from_pretrained(
-            "Qwen/Qwen2.5-VL-3B-Instruct",
-            torch_dtype=torch.float16,
-            device_map="auto",  # GPU 없으면 자동으로 CPU
-        )
+        # 1) 로컬 경로가 주어지면 그걸 우선 사용
+        if local_dir:
+            ckpt_path = Path(local_dir)
+
+            # local_dir이 qwen25_v4 같은 상위 폴더라면: final > 최신 checkpoint 자동 선택
+            if ckpt_path.is_dir():
+                final_path = ckpt_path / "final"
+                if final_path.exists():
+                    ckpt_path = final_path
+                else:
+                    # checkpoint-* 중 가장 큰 step 선택
+                    checkpoints = sorted(
+                        ckpt_path.glob("checkpoint-*"),
+                        key=lambda p: int(p.name.split("-")[-1]) if p.name.split("-")[-1].isdigit() else -1
+                    )
+                    if checkpoints:
+                        ckpt_path = checkpoints[-1]
+
+            print(f"[INFO] Loading VLM from local checkpoint: {ckpt_path}")
+
+            # processor는 보통 체크포인트에 없을 수 있어서:
+            #  - 체크포인트에 있으면 거기서 로드
+            #  - 없으면 베이스에서 로드
+            try:
+                self.processor = AutoProcessor.from_pretrained(str(ckpt_path))
+                print("[INFO] Processor loaded from checkpoint.")
+            except Exception:
+                self.processor = AutoProcessor.from_pretrained(base_id)
+                print("[WARN] Processor not found in checkpoint. Loaded from base model.")
+
+            # 2) 체크포인트가 "풀 모델"인지 "LoRA 어댑터"인지 자동 판별
+            adapter_cfg = ckpt_path / "adapter_config.json"
+            is_lora = adapter_cfg.exists()
+
+            if is_lora:
+                print("[INFO] Detected LoRA adapter checkpoint. Loading base + adapter...")
+                from peft import PeftModel
+
+                base_model = AutoModelForVision2Seq.from_pretrained(
+                    base_id,
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+
+                self.model = PeftModel.from_pretrained(
+                    base_model,
+                    str(ckpt_path),
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+
+                print("[INFO] LoRA adapter loaded successfully.")
+
+            else:
+                print("[INFO] Detected full-model checkpoint. Loading directly...")
+                self.model = AutoModelForVision2Seq.from_pretrained(
+                    str(ckpt_path),
+                    torch_dtype=torch.float16,
+                    device_map="auto",
+                )
+                print("[INFO] Full model loaded successfully.")
+            
+
+        else:
+            # 3) 로컬 지정이 없으면 베이스 모델
+            print("[INFO] Loading base model only (no checkpoint path provided).")
+            self.processor = AutoProcessor.from_pretrained(base_id)
+            self.model = AutoModelForVision2Seq.from_pretrained(
+                base_id,
+                torch_dtype=torch.float16,
+                device_map="auto",
+            )
+
         self.model.eval()
-        print("[INFO] Base model loaded successfully (LoRA disabled).")
+        print("[INFO] VLM ready.")
 
     def _is_valid_food_name(self, s: str) -> bool:
         if not s:
@@ -183,7 +246,6 @@ class QwenClient:
 
     # 1) 음식 이미지를 보고 음식 명 추론
     def predict_food_name(self, pil_image: Image.Image) -> str:
-        # ✅ 1차 프롬프트 (네가 작성한 개선본을 "문장 연결" 제대로 되도록 정리)
         prompt1 = (
             "너는 한국 음식 이미지 분류기다.\n"
             "이미지에서 '가장 중심이 되는 음식 1개'의 이름만 한국어로 출력해라.\n\n"
@@ -209,7 +271,7 @@ class QwenClient:
         if self._is_valid_food_name(out1):
             return out1
 
-        # ✅ 2차 프롬프트(재시도) - 더 강하게 "반드시 음식명"
+        # 2차 시도 프롬프트 (더 간단히)
         prompt2 = (
             "너는 한국 음식 이미지 분류기다.\n"
             "모르겠어도 '-', '?', '없음'을 출력하지 마라.\n"
@@ -223,7 +285,7 @@ class QwenClient:
         if self._is_valid_food_name(out2):
             return out2
 
-        # ✅ 최후 fallback: 예전처럼 이상값 노출을 막기 위한 기본값
+        # 최후 fallback: 예전처럼 이상값 노출을 막기 위한 기본값
         print(f"[WARN] VLM invalid outputs: out1='{out1}', out2='{out2}' -> fallback='음식'")
         return "음식"
 
@@ -233,9 +295,9 @@ class QwenClient:
 당신은 전문 영양학자입니다.
 "{food_name}" 음식의 100g 기준 영양성분을 추정하세요.
 
-❗ 반드시 아래 JSON 형식으로만 출력하세요.
-❗ 설명, 문장, 코드블록, 여분의 텍스트는 절대로 넣지 마세요.
-❗ 모든 수치는 number 로 출력하세요 (따옴표 금지)
+ 반드시 아래 JSON 형식으로만 출력하세요.
+ 설명, 문장, 코드블록, 여분의 텍스트는 절대로 넣지 마세요.
+ 모든 수치는 number 로 출력하세요 (따옴표 금지)
 
 예시 출력:
 {{
@@ -285,9 +347,7 @@ class QwenClient:
 
 qwen = QwenClient()
 
-# =========================
 # Chroma RAG 설정
-# =========================
 import chromadb
 from chromadb.utils import embedding_functions
 
@@ -359,10 +419,20 @@ def build_chroma_from_db():
     print("[INFO] Finished building Chroma index.")
 
 
-def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: float = 1.0) -> Optional[dict]:
-    """Chroma로 유사 음식 영양정보 검색 및 추정 (Top-1 선택)"""
+def rag_estimate_nutrition(
+    food_name: str,
+    top_k: int = 3,
+    hard_threshold: float = 1.0,      # 1번: 이것 넘으면 RAG 자체를 버림
+    soft_threshold: float = 0.75,     # (선택) 2번: 이 안쪽 후보들만 평균에 참여
+    eps: float = 1e-6
+) -> Optional[dict]:
+    """
+    - Top-K 검색
+    - best_distance > hard_threshold 이면 None (LLM 폴백 유도)
+    - 아니면 (dist <= soft_threshold) 후보만 골라 inverse-distance 가중평균
+      (조건을 만족하는 후보가 없으면 그냥 Top-1 사용)
+    """
     result = food_collection.query(query_texts=[food_name], n_results=top_k)
-
     metadatas = result.get("metadatas", [[]])[0]
     distances = result.get("distances", [[]])[0]
     documents = result.get("documents", [[]])[0]
@@ -371,42 +441,69 @@ def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: f
         print(f"[WARN] No RAG results found for '{food_name}'")
         return None
 
-    # 상세 로깅: 검색 결과 출력
+    # 로그
     print(f"[DEBUG] RAG Search Results for '{food_name}':")
     for i, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances)):
         print(f"  [{i+1}] {doc} | distance={dist:.4f}")
-        print(f"      kcal={meta.get('kcal')}, carb={meta.get('carb')}g, "
-              f"protein={meta.get('protein')}g, fat={meta.get('fat')}g")
 
-    # 가장 유사한 결과 선택 (Top-1)
-    best_meta = metadatas[0]
     best_distance = distances[0]
+    best_meta = metadatas[0]
 
-    # 거리 임계값 체크
-    if best_distance > distance_threshold:
-        print(f"[WARN] Best match distance ({best_distance:.4f}) exceeds threshold ({distance_threshold})")
-        print(f"[WARN] Result may be inaccurate for '{food_name}'")
+    # ✅ 1번: hard threshold 넘으면 RAG 폐기
+    if best_distance > hard_threshold:
+        print(f"[WARN] Best match distance ({best_distance:.4f}) > hard_threshold ({hard_threshold}).")
+        print("[WARN] Discarding RAG result -> fallback to LLM.")
+        return None
 
-    # Top-1만 사용 (평균 제거)
+    # ✅ 2번: soft_threshold 안쪽만 평균에 참여 (없으면 Top-1)
+    candidates = []
+    for meta, dist in zip(metadatas, distances):
+        if dist <= soft_threshold:
+            candidates.append((meta, dist))
+
+    # 후보가 너무 없으면 Top-1만 사용
+    if not candidates:
+        print(f"[INFO] No candidates within soft_threshold ({soft_threshold}). Using Top-1 only.")
+        return {
+            "standard": best_meta.get("standard", "100g"),
+            "kcal": float(best_meta.get("kcal", 0)),
+            "carb": float(best_meta.get("carb", 0)),
+            "protein": float(best_meta.get("protein", 0)),
+            "fat": float(best_meta.get("fat", 0)),
+            "sugar": float(best_meta.get("sugar", 0)),
+            "natrium": float(best_meta.get("natrium", 0)),
+        }
+
+    # inverse-distance 가중치 (가까울수록 weight 큼)
+    weights = [1.0 / (d + eps) for _, d in candidates]
+    wsum = sum(weights)
+
+    def wavg(key: str, default=0.0) -> float:
+        s = 0.0
+        for (meta, _), w in zip(candidates, weights):
+            s += float(meta.get(key, default)) * w
+        return s / wsum if wsum > 0 else float(best_meta.get(key, default))
+
+    # standard는 숫자 평균보다 "best_meta"를 따르는 게 보통 안전
     result_data = {
         "standard": best_meta.get("standard", "100g"),
-        "kcal": float(best_meta.get("kcal", 0)),
-        "carb": float(best_meta.get("carb", 0)),
-        "protein": float(best_meta.get("protein", 0)),
-        "fat": float(best_meta.get("fat", 0)),
-        "sugar": float(best_meta.get("sugar", 0)),
-        "natrium": float(best_meta.get("natrium", 0)),
+        "kcal": wavg("kcal", 0),
+        "carb": wavg("carb", 0),
+        "protein": wavg("protein", 0),
+        "fat": wavg("fat", 0),
+        "sugar": wavg("sugar", 0),
+        "natrium": wavg("natrium", 0),
     }
 
-    print(f"[INFO] Selected nutrition data: kcal={result_data['kcal']}, "
-          f"carb={result_data['carb']}g, protein={result_data['protein']}g, fat={result_data['fat']}g")
-
+    print(
+        f"[INFO] Weighted RAG selected (best_distance={best_distance:.4f}, "
+        f"used_candidates={len(candidates)}/{len(metadatas)})"
+    )
     return result_data
 
 
-# =========================
+
 # FastAPI 앱 생성
-# =========================
 app = FastAPI(title="Foody - Qwen2.5-VL Analyzer API")
 
 
@@ -447,8 +544,8 @@ async def predict_food(
     # 5) 영양 성분 결정 로직
     if food:
         # ✅ DB에 정확히 일치하는 음식이 있으면 DB 데이터 사용
-        print(f"[INFO] ✅ Found exact match in DB: '{food.name}' (code: {food.code})")
-        print(f"[INFO] 💾 Using DB nutrition data directly (skipping RAG)")
+        print(f"[INFO] Found exact match in DB: '{food.name}' (code: {food.code})")
+        print(f"[INFO] Using DB nutrition data directly (skipping RAG)")
         
         response_name = food.name
         est = {
@@ -476,11 +573,11 @@ async def predict_food(
             est = qwen.estimate_nutrition_llm(food_name)
 
     # 최종 결과 로깅
-    print(f"[INFO] 📊 Final Response:")
-    print(f"       name='{response_name}', standard='{est.get('standard')}'")
-    print(f"       kcal={round2(est.get('kcal', 0))}, carb={round2(est.get('carb', 0))}g")
-    print(f"       protein={round2(est.get('protein', 0))}g, fat={round2(est.get('fat', 0))}g")
-    print(f"       sugar={round2(est.get('sugar', 0))}g, natrium={round2(est.get('natrium', 0))}mg")
+    print(f"[INFO] Final Response:")
+    print(f"name='{response_name}', standard='{est.get('standard')}'")
+    print(f"kcal={round2(est.get('kcal', 0))}, carb={round2(est.get('carb', 0))}g")
+    print(f"protein={round2(est.get('protein', 0))}g, fat={round2(est.get('fat', 0))}g")
+    print(f"sugar={round2(est.get('sugar', 0))}g, natrium={round2(est.get('natrium', 0))}mg")
     print(f"{'='*80}\n")
 
     return FoodResponse(
