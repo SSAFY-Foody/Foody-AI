@@ -260,7 +260,6 @@ class QwenClient:
 
     # 1) 음식 이미지를 보고 음식 명 추론
     def predict_food_name(self, pil_image: Image.Image) -> str:
-        # ✅ 1차 프롬프트 (네가 작성한 개선본을 "문장 연결" 제대로 되도록 정리)
         prompt1 = (
             "너는 한국 음식 이미지 분류기다.\n"
             "이미지에서 '가장 중심이 되는 음식 1개'의 이름만 한국어로 출력해라.\n\n"
@@ -286,7 +285,7 @@ class QwenClient:
         if self._is_valid_food_name(out1):
             return out1
 
-        # ✅ 2차 프롬프트(재시도) - 더 강하게 "반드시 음식명"
+        # 2차 시도 프롬프트 (더 간단히)
         prompt2 = (
             "너는 한국 음식 이미지 분류기다.\n"
             "모르겠어도 '-', '?', '없음'을 출력하지 마라.\n"
@@ -436,10 +435,20 @@ def build_chroma_from_db():
     print("[INFO] Finished building Chroma index.")
 
 
-def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: float = 1.0) -> Optional[dict]:
-    """Chroma로 유사 음식 영양정보 검색 및 추정 (Top-1 선택)"""
+def rag_estimate_nutrition(
+    food_name: str,
+    top_k: int = 3,
+    hard_threshold: float = 1.0,      # 1번: 이것 넘으면 RAG 자체를 버림
+    soft_threshold: float = 0.75,     # (선택) 2번: 이 안쪽 후보들만 평균에 참여
+    eps: float = 1e-6
+) -> Optional[dict]:
+    """
+    - Top-K 검색
+    - best_distance > hard_threshold 이면 None (LLM 폴백 유도)
+    - 아니면 (dist <= soft_threshold) 후보만 골라 inverse-distance 가중평균
+      (조건을 만족하는 후보가 없으면 그냥 Top-1 사용)
+    """
     result = food_collection.query(query_texts=[food_name], n_results=top_k)
-
     metadatas = result.get("metadatas", [[]])[0]
     distances = result.get("distances", [[]])[0]
     documents = result.get("documents", [[]])[0]
@@ -448,37 +457,66 @@ def rag_estimate_nutrition(food_name: str, top_k: int = 3, distance_threshold: f
         print(f"[WARN] No RAG results found for '{food_name}'")
         return None
 
-    # 상세 로깅: 검색 결과 출력
+    # 로그
     print(f"[DEBUG] RAG Search Results for '{food_name}':")
     for i, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances)):
         print(f"  [{i+1}] {doc} | distance={dist:.4f}")
-        print(f"      kcal={meta.get('kcal')}, carb={meta.get('carb')}g, "
-              f"protein={meta.get('protein')}g, fat={meta.get('fat')}g")
 
-    # 가장 유사한 결과 선택 (Top-1)
-    best_meta = metadatas[0]
     best_distance = distances[0]
+    best_meta = metadatas[0]
 
-    # 거리 임계값 체크
-    if best_distance > distance_threshold:
-        print(f"[WARN] Best match distance ({best_distance:.4f}) exceeds threshold ({distance_threshold})")
-        print(f"[WARN] Result may be inaccurate for '{food_name}'")
+    # ✅ 1번: hard threshold 넘으면 RAG 폐기
+    if best_distance > hard_threshold:
+        print(f"[WARN] Best match distance ({best_distance:.4f}) > hard_threshold ({hard_threshold}).")
+        print("[WARN] Discarding RAG result -> fallback to LLM.")
+        return None
 
-    # Top-1만 사용 (평균 제거)
+    # ✅ 2번: soft_threshold 안쪽만 평균에 참여 (없으면 Top-1)
+    candidates = []
+    for meta, dist in zip(metadatas, distances):
+        if dist <= soft_threshold:
+            candidates.append((meta, dist))
+
+    # 후보가 너무 없으면 Top-1만 사용
+    if not candidates:
+        print(f"[INFO] No candidates within soft_threshold ({soft_threshold}). Using Top-1 only.")
+        return {
+            "standard": best_meta.get("standard", "100g"),
+            "kcal": float(best_meta.get("kcal", 0)),
+            "carb": float(best_meta.get("carb", 0)),
+            "protein": float(best_meta.get("protein", 0)),
+            "fat": float(best_meta.get("fat", 0)),
+            "sugar": float(best_meta.get("sugar", 0)),
+            "natrium": float(best_meta.get("natrium", 0)),
+        }
+
+    # inverse-distance 가중치 (가까울수록 weight 큼)
+    weights = [1.0 / (d + eps) for _, d in candidates]
+    wsum = sum(weights)
+
+    def wavg(key: str, default=0.0) -> float:
+        s = 0.0
+        for (meta, _), w in zip(candidates, weights):
+            s += float(meta.get(key, default)) * w
+        return s / wsum if wsum > 0 else float(best_meta.get(key, default))
+
+    # standard는 숫자 평균보다 "best_meta"를 따르는 게 보통 안전
     result_data = {
         "standard": best_meta.get("standard", "100g"),
-        "kcal": float(best_meta.get("kcal", 0)),
-        "carb": float(best_meta.get("carb", 0)),
-        "protein": float(best_meta.get("protein", 0)),
-        "fat": float(best_meta.get("fat", 0)),
-        "sugar": float(best_meta.get("sugar", 0)),
-        "natrium": float(best_meta.get("natrium", 0)),
+        "kcal": wavg("kcal", 0),
+        "carb": wavg("carb", 0),
+        "protein": wavg("protein", 0),
+        "fat": wavg("fat", 0),
+        "sugar": wavg("sugar", 0),
+        "natrium": wavg("natrium", 0),
     }
 
-    print(f"[INFO] Selected nutrition data: kcal={result_data['kcal']}, "
-          f"carb={result_data['carb']}g, protein={result_data['protein']}g, fat={result_data['fat']}g")
-
+    print(
+        f"[INFO] Weighted RAG selected (best_distance={best_distance:.4f}, "
+        f"used_candidates={len(candidates)}/{len(metadatas)})"
+    )
     return result_data
+
 
 
 # =========================
