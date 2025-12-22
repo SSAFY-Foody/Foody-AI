@@ -54,3 +54,5 @@ vlmtraining/trained_models/
 *.pt
 *.pth
 
+/analysis/ignore/
+/vlmmachine/ignore/
