@@ -1,5 +1,7 @@
 # Foody (푸디) - AI 기반 식단 분석 및 커뮤니티 플랫폼
 
+![Foody Logo](./github_asset/img/foody_logo.png)
+
 ### 프로젝트 기간
 2025.12.01 ~ 2025.12.25
 
